@@ -77,7 +77,7 @@ enum                      /* index to define desired log elements */
 
 static double newestTime, oldestTime = 1.2345;
 static m2History *topPtr = NULL, *endPtr = NULL, *inPtr = NULL;
-static m2History archive[BUFFERSIZE];
+// static m2History archive[BUFFERSIZE];
 static epicsMutexId archiveFree = NULL;
 /* Indicates that logging has been turned on */
 static int loggingArmed = OFF;
@@ -93,6 +93,7 @@ epicsMutexId refMemFree = NULL;
 DBADDR logCAddr;
 
 
+#if 0                   // This isn;t being used by anything
 /* ===================================================================== */
 /*
  * Function name:
@@ -237,6 +238,8 @@ static int writeArchive (double xTilt, double yTilt, double zFocus, double setX,
     }
     return (OK);
 }
+#endif 
+
 
 /* ===================================================================== */
 /*
