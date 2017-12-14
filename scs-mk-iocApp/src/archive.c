@@ -92,8 +92,7 @@ int logThreshold = 20;
 epicsMutexId refMemFree = NULL;
 DBADDR logCAddr;
 
-
-#if 0                   // This isn;t being used by anything
+#if 0          // This isn;t being used by anybody
 /* ===================================================================== */
 /*
  * Function name:
@@ -238,8 +237,8 @@ static int writeArchive (double xTilt, double yTilt, double zFocus, double setX,
     }
     return (OK);
 }
-#endif 
 
+#endif
 
 /* ===================================================================== */
 /*

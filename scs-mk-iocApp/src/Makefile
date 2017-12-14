@@ -8,6 +8,8 @@ include $(TOP)/configure/CONFIG
 #=============================
 # Build the IOC application
 
+USR_CFLAGS += -DMK
+
 PROD_IOC_RTEMS = scs-mk-ioc
 # scs-mk-ioc.dbd will be created and installed
 DBD += scs-mk-ioc.dbd
