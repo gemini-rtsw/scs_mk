@@ -70,8 +70,8 @@
  *              since only used by control.c
  * 27-Sep-2002: Freeze last guide values when stopping guide loop
  * 19-Oct-2017: Begin conversion to EPIS OSI (mdw)
- *
- */
+*
+*/
 /* ===================================================================== */
 #include <string.h>     /* For strncpy */
 #include <math.h>       /* For abs */
@@ -80,9 +80,10 @@
 #include <timeLib.h>    /* For timeNow */
 #include <vmi5588.h>    /* For rmIntSend */
 #include <drvXy240.h>   /* for xy240_writePortBit() */
+#include <epicsExport.h>
 
 #include "utilities.h"  /* For debugLevel, ag2m2 */
-#include "archive.h"    /* For refMemFree */
+//#include "archive.h"    /* For refMemFree */
 #include "chop.h"       /* For jogBeam, chopIsOn */
 #include "control.h"    /* For logThreshold, SYSTEM_CLOCK_RATE */
 #include "guide.h"      /* For updateInterval, guideOn, guideOnA, guideOnB,
@@ -91,14 +92,14 @@
 #include "interp.h"     /* For AX, AY, ..., Z axis identifiers */
 #include "eventBus.h"   /* fo XYCARDNUM */
 
- /* Define limits for incremental steps */
+/* Define limits for incremental steps */
 #define TILT_GUIDE_STEP_LIMIT   32.0   /* arcsec  */
 
- /* This limit is now so big that it really isn't a limit at all.
-    It could be removed completely and maybe for the TILT_GUIDE_STEP_LIMIT
-    as well. But of course, doing this may introduce new problems - for eg.
-    the offload to the mount - and so leave in for now
-  */
+/* This limit is now so big that it really isn't a limit at all.
+   It could be removed completely and maybe for the TILT_GUIDE_STEP_LIMIT
+   as well. But of course, doing this may introduce new problems - for eg.
+   the offload to the mount - and so leave in for now
+   */
 #define Z_GUIDE_STEP_LIMIT      3000.0   /* microns */
 
 #define DEFAULT_VARIANCE 0.01
@@ -106,7 +107,7 @@
 #define COVAR_MAX        100
 
 //#define RECEIVE_TIMEOUT         100     /* 1 second * system clock rate */
-#define RECEIVE_TIMEOUT         1.0       /* 1 second */
+#define RECEIVE_TIMEOUT         0.5       /* 1 second */
 
 #define MAGIC_NUMBER            1958    /* magic number so sequences don't
                                            all start at zero    */
@@ -115,12 +116,13 @@
 #define MAX_FILENAME_SIZE       100
 #define LOG_INTERVAL            5
 
-int sep = 0;   /* Send Every guide pulse (Default, NO. Send every other pulse.*/ 
+int sendpulse = 0;    
+int showcs = 0;   
 static void reportTimes();
 struct timespec timeStart, timeEnd;
 int mytimeshow = 0;
 
- typedef struct
+typedef struct
 {
    double  x;
    double  y;
@@ -196,7 +198,7 @@ static char *m2CmdName[] =
    "SEQUENCE3           ",
    "CMD_XYINIT          ",
    "XY_DEADBAND_CHANGE  ",
-   "SCS_TIME_UPDATE     ",
+   /*"SCS_TIME_UPDATE     ",*/
    NULL
 };
 
@@ -206,7 +208,8 @@ static struct
 {
    long NS;
    long scsHeartbeat;
-   long m2Heartbeat; long testRequest;
+   long m2Heartbeat;
+   long testRequest;
 }   local =
 
 {
@@ -218,29 +221,28 @@ static struct
 };
 
 
-#ifdef MK 
 static Phasor phasorX = {
-        {{1.0},{0.0}},      /* Snew */
-        {{1.0},{0.0}},      /* Sold*/
-        0.0,                /* command result*/
-        12.3,               /* Frequency of signal*/
-        0.1,                /* Amplitude of signal*/
-        198.9,              /* Sample Rate*/
-        0.0050277,          /* Sample time = 1/Fs    ==> 5ms @ 200Hz  */
-        0.0,                /* Theta Initial Valie*/
-        {{0.0, 0.0}, {0.0, 0.0}}, /* Rotation Matrix Initial values*/
+   {{1.0},{0.0}},      /* Snew */
+   {{1.0},{0.0}},      /* Sold*/
+   0.0,                /* command result*/
+   12.3,               /* Frequency of signal*/
+   0.1,                /* Amplitude of signal*/
+   198.9,              /* Sample Rate*/
+   0.0050277,          /* Sample time = 1/Fs    ==> 5ms @ 200Hz  */
+   0.0,                /* Theta Initial Valie*/
+   {{0.0, 0.0}, {0.0, 0.0}}, /* Rotation Matrix Initial values*/
 };
 
 static Phasor phasorY = {
-        {{1.0},{0.0}},      /* Snew */
-        {{1.0},{0.0}},      /* Sold*/
-        0.0,                /* command result*/
-        12.5,               /* Frequency of signal*/
-        0.1,                /* Amplitude of signal*/
-        198.9,              /* Sample Rate*/
-        0.0050277,          /* Sample time = 1/Fs    ==> 5ms @ 200Hz  */
-        0.0,                /* Theta Initial Valie*/
-        {{0.0, 0.0}, {0.0, 0.0}}, /* Rotation Matrix Initial values*/
+   {{1.0},{0.0}},      /* Snew */
+   {{1.0},{0.0}},      /* Sold*/
+   0.0,                /* command result*/
+   12.5,               /* Frequency of signal*/
+   0.1,                /* Amplitude of signal*/
+   198.9,              /* Sample Rate*/
+   0.0050277,          /* Sample time = 1/Fs    ==> 5ms @ 200Hz  */
+   0.0,                /* Theta Initial Valie*/
+   {{0.0, 0.0}, {0.0, 0.0}}, /* Rotation Matrix Initial values*/
 };
 
 
@@ -258,45 +260,43 @@ long yvtkGuideRecycle = 0;
 #define DEFAULT_TILT_SCALE 3.917
 
 static Vtk vtkX = {
-       {{{1.0},{0.0}},  {{1.0},{0.0}}},     /* Oscillator {newval , oldval}*/
-       198.9,                               /* Vtk Sample Rate (Hz) matches P2 for now*/ 
-       0.0050277,                           /* Vtk Sample period (seconds) matches P2 for now*/ 
-       {0.0050, 0.00},                      /* {Gain.phase, Gain.frequency}*/
-       {12.0, 0.2, 0.0, 0.0},               /* {Frequency.initialValue, Frequency.tolerance, Frequency.error, Frequency.current} */
-       1.0,                                 /* Maxamplitude (arc-seconds in skyangle) Vtk will attempt to correct for. */
-       1.557,                               /* Scale */
-       -9.7,                                /* Angle of Rotation (degrees)*/
-       {{0.0, 0.0}, {0.0, 0.0}},            /* Rotation Matrix Initial values*/
-       {{{0.0},{0.0}},  {{0.0},{0.0}}},      /* Local Oscillator {newval , oldval}*/
-       {{0.0},{0.0}},                        /* Integral {{Avalue}, {Bvalue}}*/
-       0.0,                                  /* phase*/
-       0.0,                                  /* phaseOld */
-       0.0,                                  /* deltaPhase */
-       0.0,                                  /* command */
-       0,                                    /* counter */
-  
+   {{{1.0},{0.0}},  {{1.0},{0.0}}},     /* Oscillator {newval , oldval}*/
+   198.9,                               /* Vtk Sample Rate (Hz) matches P2 for now*/ 
+   0.0050277,                           /* Vtk Sample period (seconds) matches P2 for now*/ 
+   {0.0050, 0.00},                      /* {Gain.phase, Gain.frequency}*/
+   {12.0, 0.2, 0.0, 0.0},               /* {Frequency.initialValue, Frequency.tolerance, Frequency.error, Frequency.current} */
+   1.0,                                 /* Maxamplitude (arc-seconds in skyangle) Vtk will attempt to correct for. */
+   1.557,                               /* Scale */
+   -9.7,                                /* Angle of Rotation (degrees)*/
+   {{0.0, 0.0}, {0.0, 0.0}},            /* Rotation Matrix Initial values*/
+   {{{0.0},{0.0}},  {{0.0},{0.0}}},      /* Local Oscillator {newval , oldval}*/
+   {{0.0},{0.0}},                        /* Integral {{Avalue}, {Bvalue}}*/
+   0.0,                                  /* phase*/
+   0.0,                                  /* phaseOld */
+   0.0,                                  /* deltaPhase */
+   0.0,                                  /* command */
+   0,                                    /* counter */
+
 };
 
 static Vtk vtkY = {
-       {{{1.0},{0.0}},  {{1.0},{0.0}}},     /* Oscillator {newval , oldval}*/
-       198.9,                               /* Vtk Sample Rate (Hz) matches P2 for now*/ 
-       0.0050277,                           /* Vtk Sample period (seconds) matches P2 for now*/ 
-       {0.0050, 0.00},                       /* {Gain.phase, Gain.frequency}*/
-       {12.0, 0.2,0.0,0.0},                 /* {Frequency.initialValue, Frequency.tolerance, Frequency.error, Frequency.current} */
-       1.0,                                 /* Maxamplitude (arc-seconds in skyangle) Vtk will attempt to correct for. */
-       1.557,                              /* Scale */
-       -9.7,                                /* Angle of Rotation (degrees)*/
-       {{0.0, 0.0}, {0.0, 0.0}},            /* Rotation Matrix Initial values*/
-       {{{0.0},{0.0}},  {{0.0},{0.0}}},      /* Local Oscillator {newval , oldval}*/
-       {{0.0},{0.0}},                        /* Integral {{Avalue}, {Bvalue}}*/
-       0.0,                                  /* phase*/
-       0.0,                                  /* phaseOld */
-       0.0,                                  /* deltaPhase */
-       0.0,                                  /* command */
-       0,                                    /* counter */
+   {{{1.0},{0.0}},  {{1.0},{0.0}}},     /* Oscillator {newval , oldval}*/
+   198.9,                               /* Vtk Sample Rate (Hz) matches P2 for now*/ 
+   0.0050277,                           /* Vtk Sample period (seconds) matches P2 for now*/ 
+   {0.0050, 0.00},                       /* {Gain.phase, Gain.frequency}*/
+   {12.0, 0.2,0.0,0.0},                 /* {Frequency.initialValue, Frequency.tolerance, Frequency.error, Frequency.current} */
+   1.0,                                 /* Maxamplitude (arc-seconds in skyangle) Vtk will attempt to correct for. */
+   1.557,                              /* Scale */
+   -9.7,                                /* Angle of Rotation (degrees)*/
+   {{0.0, 0.0}, {0.0, 0.0}},            /* Rotation Matrix Initial values*/
+   {{{0.0},{0.0}},  {{0.0},{0.0}}},      /* Local Oscillator {newval , oldval}*/
+   {{0.0},{0.0}},                        /* Integral {{Avalue}, {Bvalue}}*/
+   0.0,                                  /* phase*/
+   0.0,                                  /* phaseOld */
+   0.0,                                  /* deltaPhase */
+   0.0,                                  /* command */
+   0,                                    /* counter */
 };
-
-#endif
 
 int applyGuide = FALSE;
 int guideUpdate = FALSE;
@@ -307,10 +307,8 @@ static double xNetGuideT = 0.0;
 static double yNetGuideT = 0.0;
 static double zNetGuideT = 0.0;
 static double xNetGuideU = 0.0;
-#ifdef MK 
 static double xRecycleGuideU = 0.0;
 static double yRecycleGuideU = 0.0;
-#endif
 static double yNetGuideU = 0.0;
 static double zNetGuideU = 0.0;
 static int positionUpdate = FALSE;
@@ -324,15 +322,15 @@ static int  frameConvert (converted *result, frameChange *f, const double x,
       const double y, const double z);
 
 
-#ifdef MK 
 void phasorShow(void);
-#endif
 
 int flipGuide = 0;
 int simLevel = 0;
+int refmem_mon1 = 0;
 memMap *scsPtr = NULL;
 memMap *scsBase = NULL;
 memMap *m2Ptr = NULL;
+epicsMutexId refMemFree = NULL;
 epicsMutexId m2MemFree = NULL;
 epicsEventId slowUpdate = NULL;
 epicsMutexId wfsFree[MAX_SOURCES];
@@ -355,8 +353,8 @@ epicsMutexId setPointFree = NULL;
 int currentBeam = BEAMA;
 int flip2 = 0;
 int flip = 0;      /* indicates whether or not beams s/b flipped
-                           eg. 1 for sig gen; 0 for OSCIR. set to 1 at
-                           crate console */
+                      eg. 1 for sig gen; 0 for OSCIR. set to 1 at
+                      crate console */
 
 double sampleData[5][3];
 double coeffData[5][3];
@@ -399,10 +397,8 @@ long followOn = OFF;
 long tiltPidOn = ON;
 long focusPidOn = ON;
 
-#ifdef MK
 long vibrationXTrackOn = OFF;
 long vibrationYTrackOn = OFF;
-#endif
 
 /* Circular buffers for FG + chopping debugging purposes */
 /* The data type is chosen based on the type of the variable 
@@ -444,7 +440,6 @@ static float cbAYDemand[CB_RECORD_NB];
 static float cbBXDemand[CB_RECORD_NB];
 static float cbBYDemand[CB_RECORD_NB];
 
-#ifdef MK
 static double cbVTKXIntegrator0[CB_RECORD_NB];
 static double cbVTKXIntegrator1[CB_RECORD_NB];
 
@@ -463,21 +458,23 @@ static double cbVTKYPhaseNew[CB_RECORD_NB];
 static double cbVTKXFrequency[CB_RECORD_NB];
 static double cbVTKYFrequency[CB_RECORD_NB];
 
-static double     cbVTKXFreqError[CB_RECORD_NB];
-static double    cbVTKYFreqError[CB_RECORD_NB];
+static double cbVTKXFreqError[CB_RECORD_NB];
+static double cbVTKYFreqError[CB_RECORD_NB];
 
-static double     cbVTKXdeltaPhase[CB_RECORD_NB];
-static double     cbVTKYdeltaPhase[CB_RECORD_NB];
+static double cbVTKXdeltaPhase[CB_RECORD_NB];
+static double cbVTKYdeltaPhase[CB_RECORD_NB];
 
-static double     cbXGuidePhasor[CB_RECORD_NB];
-static double     cbYGuidePhasor[CB_RECORD_NB];
-#endif
+static double cbXGuidePhasor[CB_RECORD_NB];
+static double cbYGuidePhasor[CB_RECORD_NB];
 
-
-void setNS(int value)
+void setLocal(long value)
 {
    local.NS = value;
+   local.scsHeartbeat = value;
+   local.m2Heartbeat = value +1;
 }
+
+#if 0
 /* ===================================================================== */
 /*
  * Function name:
@@ -570,39 +567,45 @@ void projectSource (void)
           * time update
           */
 
-         epicsMutexLock(wfsFree[source]);
-         if (readArchive (&archiveEntry, filtered[source].time) == OK)
-         {
-            deltaX = xNow - archiveEntry.setX;
-            deltaY = yNow - archiveEntry.setY;
-            deltaZ = zNow - archiveEntry.setZ;
+       if ( wfsFree[source])) {
+           epicsMutexLock(wfsFree[source]);
+           if (readArchive (&archiveEntry, filtered[source].time) == OK)
+           {
+              deltaX = xNow - archiveEntry.setX;
+              deltaY = yNow - archiveEntry.setY;
+              deltaZ = zNow - archiveEntry.setZ;
 
-            filtered[source].z1 = 
-               archiveEntry.xTilt + filtered[source].z1 + deltaX;
-            filtered[source].z2 = 
-               archiveEntry.yTilt + filtered[source].z2 + deltaY;
-            filtered[source].z3 = 
-               archiveEntry.zFocus + filtered[source].z3 + deltaZ;
-         }
-         else
-         {
+              filtered[source].z1 = 
+                 archiveEntry.xTilt + filtered[source].z1 + deltaX;
+              filtered[source].z2 = 
+                 archiveEntry.yTilt + filtered[source].z2 + deltaY;
+              filtered[source].z3 = 
+                 archiveEntry.zFocus + filtered[source].z3 + deltaZ;
+           }
+           else
+           {
 
-            /*
-             * if position cannot be fetched, use current position
-             */
+              /*
+              * if position cannot be fetched, use current position
+              */
 
-            errorLog ("projectSource - can't retrieve archive position",
-                     1, ON);
+              errorLog ("projectSource - can't retrieve archive position",
+                    1, ON);
 
-            filtered[source].z1 = scsPtr->page1.xTilt + filtered[source].z1 + deltaX;
-            filtered[source].z2 = scsPtr->page1.yTilt + filtered[source].z2 + deltaY;
-            filtered[source].z3 = scsPtr->page1.zFocus + filtered[source].z3 + deltaZ;
-         }
-         epicsMutexUnlock(wfsFree[source]);
+              filtered[source].z1 = scsPtr->page1.xTilt + filtered[source].z1 + deltaX;
+              filtered[source].z2 = scsPtr->page1.yTilt + filtered[source].z2 + deltaY;
+              filtered[source].z3 = scsPtr->page1.zFocus + filtered[source].z3 + deltaZ;
+           }
+           epicsMutexUnlock(wfsFree[source]);
+       } else {
+         errorLog ("projectSource - couldn't obtain wfsFree[source] mutex", 1, ON);
+       } 
       }
    }
 }
+#endif
 
+#if 0
 /* ===================================================================== */
 /*
  * Function name:
@@ -750,6 +753,8 @@ void blendSources (void)
 #endif
 }
 
+#endif  /* end of blendSources()*/
+
 int profileCem = 0;
 int time_debug = 0;
 /* ===================
@@ -764,13 +769,13 @@ void cemTimerEnd () {
       /* This wait will always time out. Maybe it should be replaced with a taskDelay()    */
       /* or EPICS OSI equivalent [epicsThreadSleep()]  20171030 (mdw)                        */
       if (epicsEventWaitWithTimeout(cemTimerEndSem, SEM_TIMEOUT) == epicsEventWaitOK)  {
-         
-        clock_gettime( CLOCK_REALTIME, &timeEnd);
 
-        if (profileCem) { 
+         clock_gettime( CLOCK_REALTIME, &timeEnd);
+
+         if (profileCem) { 
             profileCem = 0;
             reportTimes();
-        }
+         }
       }
       else {
          if (time_debug) {
@@ -804,7 +809,7 @@ void cemTimerStart ()
 static void reportTimes() {
 
    struct timespec result;
-   
+
    if ((timeEnd.tv_nsec - timeStart.tv_nsec) < 0) {
       result.tv_sec = timeEnd.tv_sec - timeStart.tv_sec -1;
       result.tv_nsec = 1E+9 + timeEnd.tv_nsec - timeStart.tv_nsec;
@@ -868,23 +873,27 @@ void fireLoops (void *param)
 }
 
 
+static int isr2 = 0;
 /* Later: add header */
 void rmISR2 (int node)
 {
    nodeISR2 = node;
+   isr2++;
    epicsEventSignal(scsReceiveNow);
 
    /* why is this commented out? This is the only place the 
     * event is signalled. 20171030 (mdw) */ 
    /*
-   semGive (cemTimerEndSem);
-   */
+      semGive (cemTimerEndSem);
+      */
 }
 
+static int isr3 = 0;
 /* Later: add header */
 void rmISR3 (int node)
 {
    nodeISR3 = node;
+   isr3++;
    epicsEventSignal(guideUpdateNow);
 }
 
@@ -933,25 +942,48 @@ void rmISR3 (int node)
 
 /* ===================================================================== */
 
-#ifdef MK
 int rxwaitticks = 0;
 int useDynamicVtk =0;
-#endif
 
-int    waittime = 0.08;   
+static double waittime = 0.1; 
+static double waittime2 = 0.5;   
+static int mutex1= 0;
+static int mutex2= 0;
+static int mutex3= 0;
+static int mutex4= 0;
+static int mutex5= 0;
+static int mutex6= 0;
+static int mutex7= 0;
+static int mutex8= 0;
 
+/*static double xDemandPg0 = 0.000001;   
+static double zFocusSmoothPg0 = 0.000001;   
+static int heartbeatPg0 = 1;   
+static double xTiltGuidePg0 = 0.000001;
+static double yTiltGuidePg0 = 0.000001;
+static double zFocusGuidePg0 = 0.000001;
+static int NSPg0 = 1;   
+static int fixVal = 0;   
+*/
+
+static int procGuideCount1 = 0;
+static int procGuideCount2 = 0;
+static int procGuideCount3 = 0;
+static int procGuideCount4 = 0;
+static int procGuideCount5 = 0;
+static int procGuideCount6 = 0;
+static int procGuideCount7 = 0;
+static int procGuideCount8 = 0;
+static int procGuideCount9 = 0;
+static int procGuideCount10 = 0;
 void processGuides (void) 
 {
    long command = FAST_ONLY;
    location    position;
    converted   result = {0,0,0};
-   int indx = 0; 
-   //char message[200];
    long lastNS = 0;
 
-#ifdef MK 
    long sensedGuideRate = GUIDE_200_HZ;
-#endif
 
    static struct
    {
@@ -960,21 +992,13 @@ void processGuides (void)
       double oiwfs;
       double gaos;
       double gyro;
-
-#ifndef MK
       double gpi;
-#endif
 
-#ifdef MK
-   } updateTime = { 0.0, 0.0, 0.0, 0.0, 0.0 };  
-#else
    } updateTime = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };  
-#endif
-   
+
    /* Used to time stamp a set of data written to the ring buffers */
    double cbTimeStamp;
 
-#ifdef MK
    double tsdiff=0.0;
    static double tsold=0.0;
 
@@ -990,12 +1014,20 @@ void processGuides (void)
 
    vtkInit(&vtkY);
    showVtkRotation(&vtkY);
-#endif
 
    /* Initialize eventData structure */ 
    eventData.currentBeam = 0;
    eventData.inPosition = 0;
 
+   if (guideUpdateNow == NULL) {
+      errlogSevPrintf(errlogMajor, "guideUpdateNow Null!\n");
+      return;
+   }
+   else {
+      errlogSevPrintf(errlogInfo, "guideUpdateNow= starting control!\n");
+   }
+
+   procGuideCount1++;
    for (;;)
    {
 
@@ -1024,7 +1056,13 @@ void processGuides (void)
       if (epicsEventWaitWithTimeout(guideUpdateNow, waittime) == epicsEventWaitOK) 
          /* then ISR has given sem or it has never been taken */
       {
-         epicsThreadSleep(0.001);
+         //
+         //
+         //  ******REMOVED DELAY HERE AFTER PORT TO RTEMS*********
+         //epicsThreadSleep(0.001;);
+         //
+         //
+         //
          /* Find which sources have been updated since last ISR call 
           * first, check PWFS1 */
 
@@ -1109,7 +1147,6 @@ void processGuides (void)
                   epicsPrintf("processGuides - read RM data from PWFS2\n");
                }
 
-#ifdef MK
                /* N.B. Use this if you're not guiding with P2 and want to check the
                 * functionality of VTK. Here we recycle the previous output
                 * xNetGuideU. It is scaled by the P2 Signal Scale factor 
@@ -1121,14 +1158,13 @@ void processGuides (void)
                 * */
                if (  xvtkGuideRecycle ) {
 
-                    scsBase->pwfs2.z1 =  xRecycleGuideU * (-0.7 / DEFAULT_TILT_SCALE) ;
+                  scsBase->pwfs2.z1 =  xRecycleGuideU * (-0.7 / DEFAULT_TILT_SCALE) ;
                }
 
                if (  yvtkGuideRecycle ) {
 
-                    scsBase->pwfs2.z2 = yRecycleGuideU * (-0.7/ DEFAULT_TILT_SCALE) ;
+                  scsBase->pwfs2.z2 = yRecycleGuideU * (-0.7/ DEFAULT_TILT_SCALE) ;
                }
-#endif
 
                /* copy the data from reflective memory page */
                frameConvert(&result, ag2m2[PWFS2], 
@@ -1148,20 +1184,14 @@ void processGuides (void)
                switch (filter[PWFS2][XTILT].type)
                {
                   case RAW:
-#ifdef MK
                      if (debugLevel == DEBUG_RESERVED2) epicsPrintf("RAW\n");
-#endif
                      break;
                   case NOTUSED:
-#ifdef MK
                      if (debugLevel == DEBUG_RESERVED2) epicsPrintf("NOTUSED\n");
-#endif
                      break;
 
                   default:
-#ifdef MK
                      if (debugLevel == DEBUG_RESERVED2) epicsPrintf("DEFAULT\n");
-#endif
                      filtered[PWFS2].z1 = iir_filter 
                         ((double) filtered[PWFS2].z1, 
                          &filter[PWFS2][XTILT]);
@@ -1182,11 +1212,7 @@ void processGuides (void)
                guideUpdate = TRUE;
             }
          }
-#ifdef MK
-         else if ( (nodeISR3 == AGOI_NODE) && (weight[OIWFS][currentBeam] > -2) )
-#else
          else if ( (nodeISR3 == AGOI_NODE || nodeISR3 == F2OI_NODE) && (weight[OIWFS][currentBeam] > -2) )
-#endif
          {
             if (scsBase->oiwfs.interval > updateInterval.oiwfs) 
             {
@@ -1298,14 +1324,13 @@ void processGuides (void)
             } 
          }
 
-#ifndef MK
-        else if ( (nodeISR3 == GPI_NODE) && (weight[OIWFS][currentBeam] > -2) )
+         else if ( (nodeISR3 == GPI_NODE) && (weight[OIWFS][currentBeam] > -2) )
          {
-             if (scsBase->gpi.interval > updateInterval.gpi) 
+            if (scsBase->gpi.interval > updateInterval.gpi) 
             { 
                if (debugLevel == DEBUG_RESERVED2) 
-                   errlogMessage("processGuides - GPI NODE interrupting me\n"); 
-  
+                  errlogMessage("processGuides - GPI NODE interrupting me\n"); 
+
                updateTime.gpi = scsBase->gpi.time;
                updateInterval.gpi = scsBase->gpi.interval; 
 
@@ -1354,9 +1379,9 @@ void processGuides (void)
                zNetGuide = (double) filtered[GPI].z3;
 
                guideUpdate = TRUE;
-             } 
+            } 
          }
-#endif
+
          else if (scsBase->gyro.time > updateTime.gyro)
          {
             updateTime.gyro = scsBase->gyro.time;
@@ -1419,31 +1444,28 @@ void processGuides (void)
 
       else
       {
-#if 0
-         if (debugLevel == DEBUG_RESERVED2) 
-            errlogMessage("processGuides - guideUpdateNow timeout\n"); 
-#endif
 
          /* New, assume timeout must mean no guide update has
           * occurred and bypass timestamp checking 
           */
+
+         //errlogSevPrintf(errlogInfo, "guideUpdateNow timeout\n");
          guideUpdate = FALSE;         
+         procGuideCount2++; /*2*/
       }
 
-#ifdef MK
       if (debugLevel == DEBUG_RESERVED2)
       {
          errlogPrintf ("currentBeam = %1d, (0=BEAMA,3=A2BRAMP); guideOnA = %1d\n",
                currentBeam, guideOnA); 
 
          errlogPrintf("guideOn = %1ld; applyGuide = %1d, guideUpdate = %1d\n",
-             guideOn, applyGuide, guideUpdate); 
+               guideOn, applyGuide, guideUpdate); 
       } 
-#endif
 
       /* Notes about all these conditions...
        *
-       *   - "guideOn" refers to request from TCS/SCS CAD
+       * - "guideOn" refers to request from TCS/SCS CAD
        *     executed to turn on guiding   
        *
        * - "applyGuide" refers to the beam setting being
@@ -1455,11 +1477,13 @@ void processGuides (void)
        *
        */
 
+
       /* Always set applyGuide to TRUE when we're not chopping. If we are
        * chopping we need to assert the Guide Gate is valid by checking
        * inPosition.*/
       if ((!chopIsOn) || (chopIsOn && (eventData.inPosition == TRUE))) {
          applyGuide = TRUE;
+         procGuideCount3++; /*3*/
       }
       else {
          applyGuide = FALSE;
@@ -1469,6 +1493,7 @@ void processGuides (void)
       if (guideOn == TRUE && applyGuide == TRUE)
       {
 
+         procGuideCount4++; /*4*/
          /* Set pin JK2/41 high to show guiding is appplied 
          */
          xy240_writePortBit (XYCARDNUM, PORT7, BIT4, epicsTrue); /* card 0, port 7, bit 4 */
@@ -1476,6 +1501,7 @@ void processGuides (void)
          if (guideUpdate == TRUE) /* a new guide update has arrived */
          {
 
+            procGuideCount5++; /*5*/
             if (guideType == AUTOGUIDE)
             {
                /* Not used by M2, so not part of the checksum
@@ -1497,6 +1523,7 @@ void processGuides (void)
                   if (debugLevel == DEBUG_RESERVED2) 
                      epicsPrintf("tiltPidOn is ON\n");
 #endif
+                  procGuideCount6++; /*6*/
                   xNetGuideT = control (XTILT, xNetGuide, 0.0);
                   yNetGuideT = control (YTILT, yNetGuide, 0.0);
                }
@@ -1510,79 +1537,78 @@ void processGuides (void)
                   yNetGuideT = yNetGuide;
                }
 
-#ifdef MK
                if (vibrationXTrackOn == ON) {
 
-                   /* Calculate new vtk X Command and 
-                    * Disable VTK if ERROR is returned. */
-                   if (vtkControl(&vtkX, xNetGuide) != OK) {
-                       vibrationXTrackOn = OFF;
-                   }
+                  /* Calculate new vtk X Command and 
+                   * Disable VTK if ERROR is returned. */
+                  if (vtkControl(&vtkX, xNetGuide) != OK) {
+                     vibrationXTrackOn = OFF;
+                  }
 
-                   xNetGuideT += vtkX.command;
+                  xNetGuideT += vtkX.command;
 
                } 
                if (vibrationYTrackOn == ON) 
                {
 
-                   /* Calculate new vtk Y Command and 
-                    * Disable VTK if ERROR is returned. */
-                   if (vtkControl(&vtkY, yNetGuide) != OK) {
-                       vibrationYTrackOn = OFF;
-                   }
-    
-                   /* Add the latest */
-                   yNetGuideT += vtkY.command;
+                  /* Calculate new vtk Y Command and 
+                   * Disable VTK if ERROR is returned. */
+                  if (vtkControl(&vtkY, yNetGuide) != OK) {
+                     vibrationYTrackOn = OFF;
+                  }
+
+                  /* Add the latest */
+                  yNetGuideT += vtkY.command;
                }
-#endif
 
                if (focusPidOn == ON)
                {
+                  procGuideCount7++; /*7*/
                   zNetGuideT = control (FOCUS, zNetGuide, 0.0);
                }
                else
                {
                   zNetGuideT = zNetGuide;
 
-#ifdef MK
                }
 
                /* Synthesized Signal in X TILT axis*/
                if(phasorXApply) {
 
-                   MatMult(phasorX.Rotator, phasorX.Sold, phasorX.Snew);   /* Advance the phasorX */
-                   phasorX.command = phasorX.amp * phasorX.Snew[0][0];      /* New Value = A*cos(wt); */
-                   memcpy(phasorX.Sold, phasorX.Snew, 2*1*sizeof(double)); /* Store new Svector Snew into Sold*/
-                   xNetGuideT +=  xTiltGuideSimScale * phasorX.command * DEFAULT_TILT_SCALE;
+                  MatMult(phasorX.Rotator, phasorX.Sold, phasorX.Snew);   /* Advance the phasorX */
+                  phasorX.command = phasorX.amp * phasorX.Snew[0][0];      /* New Value = A*cos(wt); */
+                  memcpy(phasorX.Sold, phasorX.Snew, 2*1*sizeof(double)); /* Store new Svector Snew into Sold*/
+                  xNetGuideT +=  xTiltGuideSimScale * phasorX.command * DEFAULT_TILT_SCALE;
                }
 
                /* Synthesized Signal in Y TILT axis*/
                if(phasorYApply) {
 
-                   MatMult(phasorY.Rotator, phasorY.Sold, phasorY.Snew);   /* Advance the phasorY */
-                   phasorY.command = phasorY.amp * phasorY.Snew[0][0];      /* New Value = A*cos(wt); */
-                   memcpy(phasorY.Sold, phasorY.Snew, 2*1*sizeof(double)); /* Store new Svector Snew into Sold*/
-                   yNetGuideT +=  yTiltGuideSimScale * phasorY.command * DEFAULT_TILT_SCALE;
-#endif
- 
+                  MatMult(phasorY.Rotator, phasorY.Sold, phasorY.Snew);   /* Advance the phasorY */
+                  phasorY.command = phasorY.amp * phasorY.Snew[0][0];      /* New Value = A*cos(wt); */
+                  memcpy(phasorY.Sold, phasorY.Snew, 2*1*sizeof(double)); /* Store new Svector Snew into Sold*/
+                  yNetGuideT +=  yTiltGuideSimScale * phasorY.command * DEFAULT_TILT_SCALE;
+
                }
 
-               /* Clamp the values of the guide. 
-                  Tell the TCS the clamped values too, to keep 
-                  it in sync with what the M2 receives. 
-                  And, do this after the PID */
+               /* Clamp the values of the guide.
+                * Tell the TCS the clamped values too,
+                * to keep it in sync with what the M2
+                * receives.
+                *
+                * And, do this after the PID
+                */
                xNetGuideU = confine (xNetGuideT, TILT_GUIDE_STEP_LIMIT*tiptiltGuideLimitFactor,
-                 -TILT_GUIDE_STEP_LIMIT*tiptiltGuideLimitFactor);
-          yNetGuideU = confine (yNetGuideT, TILT_GUIDE_STEP_LIMIT*tiptiltGuideLimitFactor,
-                      -TILT_GUIDE_STEP_LIMIT*tiptiltGuideLimitFactor);
-          zNetGuideU = confine (zNetGuideT, Z_GUIDE_STEP_LIMIT*focusGuideLimitFactor,
-                 -Z_GUIDE_STEP_LIMIT*focusGuideLimitFactor);
+                     -TILT_GUIDE_STEP_LIMIT*tiptiltGuideLimitFactor);
+               yNetGuideU = confine (yNetGuideT, TILT_GUIDE_STEP_LIMIT*tiptiltGuideLimitFactor,
+                     -TILT_GUIDE_STEP_LIMIT*tiptiltGuideLimitFactor);
+               zNetGuideU = confine (zNetGuideT, Z_GUIDE_STEP_LIMIT*focusGuideLimitFactor,
+                     -Z_GUIDE_STEP_LIMIT*focusGuideLimitFactor);
 
                /* write values to TCS variables */
                xGuideTcs = xNetGuideU;
                yGuideTcs = yNetGuideU;
                zGuideTcs = zNetGuideU;
-
 
             } /* guideType == AUTOGUIDE */
 
@@ -1594,8 +1620,16 @@ void processGuides (void)
             {
                errlogMessage("guideType is PROJECT\n"); 
 
-               projectSource ();
-               blendSources ();
+               /**
+                * TODO: mrippa 2018 Implementation is outstanding.
+                *       This implies it is missing, not that it's good.
+                *
+                * NB. These routines must implemented for this mode to work. 
+                *
+                *
+                *   projectSource ();
+                *   blendSources ();
+               */
 
                xNetGuideU = xNetGuide;
                yNetGuideU = yNetGuide;
@@ -1618,8 +1652,13 @@ void processGuides (void)
        */
       else {   
 
+         procGuideCount8++; /*8*/
          /* Set pin JK2/41 high to show guiding is *NOT*
           * appplied 
+          *
+          *
+          * TODO: Test Reimplementation of xy240 port. 
+          *       Matt, Mike, Ignacio
           */
          xy240_writePortBit(XYCARDNUM, PORT7, BIT4, epicsFalse);
 
@@ -1631,8 +1670,8 @@ void processGuides (void)
                -TILT_GUIDE_STEP_LIMIT*tiptiltGuideLimitFactor);
          yNetGuideU = confine (yNetGuideT, TILT_GUIDE_STEP_LIMIT*tiptiltGuideLimitFactor, 
                -TILT_GUIDE_STEP_LIMIT*tiptiltGuideLimitFactor); 
-        
-      if (focusPidOn == ON)
+
+         if (focusPidOn == ON)
          {
             zNetGuideT = control (FOCUS, 0.0, 0.0);
          }
@@ -1653,20 +1692,19 @@ void processGuides (void)
 
       if (simLevel == 0) /* No simulation, write to real reflective memory */
       {
-#ifdef MK
-          xRecycleGuideU = xNetGuideU;
-          yRecycleGuideU = yNetGuideU;
+         procGuideCount9++; /*9*/
+         xRecycleGuideU = xNetGuideU;
+         yRecycleGuideU = yNetGuideU;
 
-          if (xvtkGuideRecycle)
+         if (xvtkGuideRecycle)
             xNetGuideU = 0.0;
 
-          if (yvtkGuideRecycle)
+         if (yvtkGuideRecycle)
             yNetGuideU = 0.0;
-#endif
 
-          scsBase->page0.xTiltGuide = (float) xNetGuideU;
-          scsBase->page0.yTiltGuide = (float) yNetGuideU;
-          scsBase->page0.zFocusGuide = 
+         scsBase->page0.xTiltGuide = (float) xNetGuideU;
+         scsBase->page0.yTiltGuide = (float) yNetGuideU;
+         scsBase->page0.zFocusGuide = 
             (float) confine ((setPoint.zFocus + zNetGuideU), 
                   Z_FOCUS_LIMIT, -Z_FOCUS_LIMIT);
 
@@ -1697,71 +1735,51 @@ void processGuides (void)
          scsBase->page0.commandCode = command;
          lastNS = scsBase->page0.NS;
          scsBase->page0.NS = ++local.NS;
-         if (fabs(lastNS - scsBase->page0.NS) > 1000)
-         {
-            epicsPrintf("SCS sending NS = %ld\n", lastNS);
-         }
          scsBase->page0.heartbeat = local.scsHeartbeat++;
+         if (debugLevel > 0)
+         {
+            epicsPrintf("SCS sending NS = %ld, local.hb=%ld\n",
+                    lastNS, local.scsHeartbeat);
+         }
          scsBase->page0.checksum = 
             checkSum ((void *) &scsBase->page0.NS, COMMAND_BLOCK_SIZE);
 
          /* flag availability of new data */
          /* The original ideal of sending only everyother pulse has bee removed */
-
-         /* DO NOT Send Every Pulse */
-         if (!sep) {
-             indx++; 
-             if (command > FAST_ONLY || indx > 1 )
-             {  
-                 rmIntSend (INT2, M2_NODE);
-                 indx = 0; 
-             }
-         }
-
-         /* Send Every Pulse */
-         else {
-
-#ifndef MK
-            if(command > FAST_ONLY) {
-               rmIntSend (INT2, M2_NODE);
-            }
-#else
-           rmIntSend (INT2, M2_NODE);
-#endif
-
-         }
-         /*Start timer to profile interrupt cycle times between SCS and CEM*/
-         /*
-         semGive(cemTimerStartSem);
-         */
+         rmIntSend (INT2, M2_NODE);
       }
       else /* simulation active, write to m2 buffer */
       {
-         epicsMutexLock(m2MemFree);
-         m2Ptr->page0.xTiltGuide = (float) xNetGuideU;
-         m2Ptr->page0.yTiltGuide = (float) yNetGuideU;
-         m2Ptr->page0.zFocusGuide = 
-              (float) confine ((setPoint.zFocus + zNetGuideU), 
-                     Z_FOCUS_LIMIT, -Z_FOCUS_LIMIT);
+	 if ( m2MemFree ) {
+            mutex1++;
+            epicsMutexLock(m2MemFree);
+            m2Ptr->page0.xTiltGuide = (float) xNetGuideU;
+            m2Ptr->page0.yTiltGuide = (float) yNetGuideU;
+            m2Ptr->page0.zFocusGuide = 
+                                 (float) confine ((setPoint.zFocus + zNetGuideU), 
+                                         Z_FOCUS_LIMIT, -Z_FOCUS_LIMIT);
 
-         /* package data */
+            /* package data */
 
-         /* fetch command from message queue */
+            /* fetch command from message queue */
 
-         if( epicsMessageQueueTryReceive(commandQId, (char *) &command, sizeof (long)) < 0)
-            command = FAST_ONLY;
+            if( epicsMessageQueueTryReceive(commandQId, (char *) &command, sizeof (long)) < 0)
+               command = FAST_ONLY;
 
-         if (command == CMD_TEST)
-            local.testRequest = 1;
+            if (command == CMD_TEST)
+               local.testRequest = 1;
 
-         m2Ptr->page0.commandCode = command;
-         m2Ptr->page0.NS = ++local.NS;
-         m2Ptr->page0.heartbeat = local.scsHeartbeat++;
-         m2Ptr->page0.checksum = 
+            m2Ptr->page0.commandCode = command;
+            m2Ptr->page0.NS = ++local.NS;
+            m2Ptr->page0.heartbeat = local.scsHeartbeat++;
+            m2Ptr->page0.checksum = 
             checkSum ((void *) &m2Ptr->page0.NS, COMMAND_BLOCK_SIZE);
 
-         epicsMutexUnlock(m2MemFree);
-
+            epicsMutexUnlock(m2MemFree);
+            mutex2++;
+	 } else {
+            errorLog ("processGuides - couldn't obtain m2MemFree mutex", 1, ON);
+	 }
          /* print command to screen for testing */
 
          if ((command > POSITION) && (debugLevel == DEBUG_MIN))
@@ -1772,7 +1790,7 @@ void processGuides (void)
          /* flag availability of new data */
          epicsEventSignal(scsDataAvailable);
       }
-   
+
 
       /* flag that fast transmission is complete and slow updates may occur */
 
@@ -1822,17 +1840,15 @@ void processGuides (void)
       cbYGuideAfterPID[cbCounter] = yNetGuideT;
       cbZGuideAfterPID[cbCounter] = zNetGuideT;
 
-#ifdef MK
+      /* 
+       * x and y RecycleGuideU contains the
+       * x and y NetGuideU information
+       * */
       cbXGuideDemand[cbCounter] = xRecycleGuideU;
       cbYGuideDemand[cbCounter] = yRecycleGuideU;
-#else
-      cbXGuideDemand[cbCounter] = xNetGuideU;
-      cbYGuideDemand[cbCounter] = yNetGuideU;
-#endif
 
       cbZGuideDemand[cbCounter] = zNetGuideU;
 
-#ifdef MK
       cbVTKXCommand[cbCounter] = vtkX.command;
       cbVTKYCommand[cbCounter] = vtkY.command;
 
@@ -1842,24 +1858,23 @@ void processGuides (void)
       cbVTKXPhaseNew[cbCounter] = vtkX.phase;
       cbVTKYPhaseNew[cbCounter] = vtkY.phase;
 
-     cbVTKXFrequency[cbCounter] = vtkX.frequency.currentValue;
-     cbVTKYFrequency[cbCounter] = vtkY.frequency.currentValue;
+      cbVTKXFrequency[cbCounter] = vtkX.frequency.currentValue;
+      cbVTKYFrequency[cbCounter] = vtkY.frequency.currentValue;
 
-     cbVTKXFreqError[cbCounter] = vtkX.frequency.error;
-     cbVTKYFreqError[cbCounter] = vtkY.frequency.error;
+      cbVTKXFreqError[cbCounter] = vtkX.frequency.error;
+      cbVTKYFreqError[cbCounter] = vtkY.frequency.error;
 
-     cbVTKXdeltaPhase[cbCounter] = vtkX.deltaPhase;
-     cbVTKYdeltaPhase[cbCounter] = vtkY.deltaPhase;
+      cbVTKXdeltaPhase[cbCounter] = vtkX.deltaPhase;
+      cbVTKYdeltaPhase[cbCounter] = vtkY.deltaPhase;
 
-     cbVTKXIntegrator0[cbCounter] = vtkX.integral[0][0];
-     cbVTKXIntegrator1[cbCounter] = vtkX.integral[1][0];
+      cbVTKXIntegrator0[cbCounter] = vtkX.integral[0][0];
+      cbVTKXIntegrator1[cbCounter] = vtkX.integral[1][0];
 
-     cbVTKYIntegrator0[cbCounter] = vtkY.integral[0][0];
-     cbVTKYIntegrator1[cbCounter] = vtkY.integral[1][0];
+      cbVTKYIntegrator0[cbCounter] = vtkY.integral[0][0];
+      cbVTKYIntegrator1[cbCounter] = vtkY.integral[1][0];
 
-     cbXGuidePhasor[cbCounter] = phasorX.command;
-     cbYGuidePhasor[cbCounter] = phasorY.command;
-#endif
+      cbXGuidePhasor[cbCounter] = phasorX.command;
+      cbYGuidePhasor[cbCounter] = phasorY.command;
 
       /* increment the counter and wrap around if necessary,
        * it is a circular buffer after all. */
@@ -1867,7 +1882,19 @@ void processGuides (void)
       {
          cbCounter = 0;
       }
-#ifdef MK
+
+      /*
+       *TODO: Check rounding implemention below.
+       *      Just use RTEMS/BSP implementation now since we're off VxWorks.
+       *
+       *      Matt, Mike, Ignacio
+       *
+       *      Check the sensedGuideRate carefully as the 
+       *      Guiding system dynamics can change dramatically
+       *      if this is incorrect.
+       *
+       */
+
       tsdiff = cbTimeStamp - tsold;
       tsold = cbTimeStamp;
       guideInfo.sensedRate = 1/(double)tsdiff;
@@ -1879,8 +1906,8 @@ void processGuides (void)
        * */
       if (useDynamicVtk && checkGuideModeChange(sensedGuideRate) != ERROR) 
          guideInfo.rate = sensedGuideRate;
-#endif 
 
+      procGuideCount10++; /*10*/
    } /* end for(;;) FOREVER*/
 }
 
@@ -1926,17 +1953,21 @@ void slowTransmit (void)
       {
          if (timeNow (&timeStamp) == OK)
          {
-            epicsMutexLock(setPointFree);
-            setPoint.xTiltA = getInterpolation (AX, timeStamp);
-            setPoint.yTiltA = getInterpolation (AY, timeStamp);
-            setPoint.xTiltB = getInterpolation (BX, timeStamp);
-            setPoint.yTiltB = getInterpolation (BY, timeStamp);
-            setPoint.xTiltC = getInterpolation (CX, timeStamp);
-            setPoint.yTiltC = getInterpolation (CY, timeStamp);
-            setPoint.zFocus = getInterpolation (Z, timeStamp);
-            setPoint.xPosition = tcs.xPosition;
-            setPoint.yPosition = tcs.yPosition;
-            epicsMutexUnlock(setPointFree);
+	    if( setPointFree ) {
+               epicsMutexLock(setPointFree);
+               setPoint.xTiltA = getInterpolation (AX, timeStamp);
+               setPoint.yTiltA = getInterpolation (AY, timeStamp);
+               setPoint.xTiltB = getInterpolation (BX, timeStamp);
+               setPoint.yTiltB = getInterpolation (BY, timeStamp);
+               setPoint.xTiltC = getInterpolation (CX, timeStamp);
+               setPoint.yTiltC = getInterpolation (CY, timeStamp);
+               setPoint.zFocus = getInterpolation (Z, timeStamp);
+               setPoint.xPosition = tcs.xPosition;
+               setPoint.yPosition = tcs.yPosition;
+               epicsMutexUnlock(setPointFree);
+	    } else {
+               errorLog ("slowTransmit - couldn't obtain setPointFree mutex", 1, ON);
+	    }
          }
          else
          {
@@ -1971,15 +2002,19 @@ void slowTransmit (void)
       }
 
       if (scstimeUpdate == 1) {
-         writeCommand(SCS_TIME_UPDATE);
+         /*writeCommand(SCS_TIME_UPDATE);*/
          scstimeUpdate = 0;
       }
 
       /* copy current SCS internal buffer to local buffer */
-      epicsMutexLock(refMemFree);
-      /* before 10sep: localCommandBlock = *(memMap *)scsPtr; */
-      localCommandBlock = *(commandBlock *)&(scsPtr->page0);
-      epicsMutexUnlock(refMemFree);
+      /* if ( refMemFree ) { */
+         epicsMutexLock(refMemFree);
+         /* before 10sep: localCommandBlock = *(memMap *)scsPtr; */
+         localCommandBlock = *(commandBlock *)&(scsPtr->page0);
+         epicsMutexUnlock(refMemFree);
+      /* } else {
+         errorLog ("slowTransmit - couldn't obtain refMemFree mutex", 1, ON);
+      } */
 
       /* write demands to reflective memory interface */
 
@@ -2053,10 +2088,8 @@ void slowTransmit (void)
          scsBase->page0.xTiltTolerance = localPtr->xTiltTolerance;
          scsBase->page0.yTiltTolerance = localPtr->yTiltTolerance;
          scsBase->page0.zFocusTolerance = localPtr->zFocusTolerance;
-         scsBase->page0.xPositionTolerance = 
-            localPtr->xPositionTolerance;
-         scsBase->page0.yPositionTolerance = 
-            localPtr->yPositionTolerance;
+         scsBase->page0.xPositionTolerance = localPtr->xPositionTolerance;
+         scsBase->page0.yPositionTolerance = localPtr->yPositionTolerance;
          scsBase->page0.bandwidth = localPtr->bandwidth;
          scsBase->page0.xTiltGain = localPtr->xTiltGain;
          scsBase->page0.yTiltGain = localPtr->yTiltGain;
@@ -2090,43 +2123,43 @@ void slowTransmit (void)
          scsBase->page0.xydir = localPtr->xydir;
          scsBase->page0.xysteps = localPtr->xysteps;
          scsBase->page0.xyPositionDeadband = localPtr->xyPositionDeadband;
-         strncpy (scsBase->page0.scsTime, cemtime, CEM_TIME_SIZE - 1);
 
       }
       else
       {
          /* simulation active */
-
+	if (m2MemFree ) {
+	 mutex3++;
          epicsMutexLock(m2MemFree);
          if (interlockFlag != ON)
          {
-               switch(jogBeam)
-               {
-                  case BEAMB:
-                     m2Ptr->page0.AxTilt = 
-                        (float) confine (setPoint.xTiltB, 
-                              X_TILT_LIMIT, -X_TILT_LIMIT);
-                     m2Ptr->page0.AyTilt = 
-                        (float) confine (setPoint.yTiltB, 
-                              Y_TILT_LIMIT, -Y_TILT_LIMIT);
-                     break;
+            switch(jogBeam)
+            {
+               case BEAMB:
+                  m2Ptr->page0.AxTilt = 
+                     (float) confine (setPoint.xTiltB, 
+                           X_TILT_LIMIT, -X_TILT_LIMIT);
+                  m2Ptr->page0.AyTilt = 
+                     (float) confine (setPoint.yTiltB, 
+                           Y_TILT_LIMIT, -Y_TILT_LIMIT);
+                  break;
 
-                  case BEAMC:
-                     m2Ptr->page0.AxTilt = 
-                        (float) confine (setPoint.xTiltC, 
-                              X_TILT_LIMIT, -X_TILT_LIMIT);
-                     m2Ptr->page0.AyTilt = 
-                        (float) confine (setPoint.yTiltC, 
-                              Y_TILT_LIMIT, -Y_TILT_LIMIT);
-                     break;
+               case BEAMC:
+                  m2Ptr->page0.AxTilt = 
+                     (float) confine (setPoint.xTiltC, 
+                           X_TILT_LIMIT, -X_TILT_LIMIT);
+                  m2Ptr->page0.AyTilt = 
+                     (float) confine (setPoint.yTiltC, 
+                           Y_TILT_LIMIT, -Y_TILT_LIMIT);
+                  break;
 
-                  default:
-                     m2Ptr->page0.AxTilt = 
-                        (float) confine (setPoint.xTiltA, 
-                              X_TILT_LIMIT, -X_TILT_LIMIT);
-                     m2Ptr->page0.AyTilt = 
-                        (float) confine (setPoint.yTiltA, 
-                              Y_TILT_LIMIT, -Y_TILT_LIMIT);
+               default:
+                  m2Ptr->page0.AxTilt = 
+                     (float) confine (setPoint.xTiltA, 
+                           X_TILT_LIMIT, -X_TILT_LIMIT);
+                  m2Ptr->page0.AyTilt = 
+                     (float) confine (setPoint.yTiltA, 
+                           Y_TILT_LIMIT, -Y_TILT_LIMIT);
 
             }
 
@@ -2170,9 +2203,9 @@ void slowTransmit (void)
          m2Ptr->page0.xPositionTolerance = 
             localPtr->xPositionTolerance;
          m2Ptr->page0.yPositionTolerance = 
-               localPtr->yPositionTolerance;
+            localPtr->yPositionTolerance;
          m2Ptr->page0.xyPositionDeadband = 
-               localPtr->xyPositionDeadband;
+            localPtr->xyPositionDeadband;
          m2Ptr->page0.bandwidth = localPtr->bandwidth;
          m2Ptr->page0.xTiltGain = localPtr->xTiltGain;
          m2Ptr->page0.yTiltGain = localPtr->yTiltGain;
@@ -2185,6 +2218,10 @@ void slowTransmit (void)
          m2Ptr->page0.zFocusSmooth = localPtr->zFocusSmooth;
          /* some missing here */
          epicsMutexUnlock(m2MemFree);
+	 mutex4++;
+       } else {
+         errorLog ("slowTransmit - couldn't obtain m2MemFree mutex", 1, ON);
+       }
       }
    } // for(;;)
 }
@@ -2233,6 +2270,7 @@ void slowTransmit (void)
  */
 
 /* ===================================================================== */
+static int scsrx5= 0;
 
 void tiltReceive (void) 
 {
@@ -2247,7 +2285,10 @@ void tiltReceive (void)
    for (;;) {
       if (epicsEventWaitWithTimeout(scsDataAvailable, RECEIVE_TIMEOUT) == epicsEventWaitOK) {
 
-         epicsMutexMustLock(m2MemFree);
+         // epicsMutexMustLock(m2MemFree);
+	if ( m2MemFree ) {
+	 mutex5++;
+	 epicsMutexLock(m2MemFree);
 
          scsCheck = checkSum ((void *) &m2Ptr->page0.NS, COMMAND_BLOCK_SIZE);
 
@@ -2267,47 +2308,51 @@ void tiltReceive (void)
              * place command into FIFO buffer for slower reading from
              * state code
              */
-             if (localCommandCode != FAST_ONLY) {
-                if (epicsMessageQueueSendWithTimeout(
+            if (localCommandCode != FAST_ONLY) {
+               if (epicsMessageQueueSendWithTimeout(
                         receiveQId, (char *) &localCommandCode,
                         sizeof(long), SEM_TIMEOUT) == ERROR)
-                {
-                   errorLog ("timeout appending command to receiveQId", 1, ON);
-                   if (myTiltRxErrcount++ < 100) 
-                      epicsPrintf("timeout appending command to receiveQId\n");
-                }
-             }
-
-             /*
-              * block received without error so update sequence
-              * counter
-              */
-              m2Ptr->page1.NR = m2Ptr->page0.NS;
-           }
-           else {
-              errorLog ("tiltReceive - checksums fail", 1, ON);
-              if (myTiltRxErrcount++ < 100) 
-                 epicsPrintf ("tiltReceive - checksums fail\n");
-           }
-
-           /* package status data to return to SCS */
-           m2Ptr->page1.heartbeat = m2Heartbeat++;
-           m2Ptr->page1.checksum = checkSum ((void *) &m2Ptr->page1.NR, 
-                 STATUS_BLOCK_SIZE);
-
-           epicsMutexUnlock(m2MemFree);
-
-           /* flag status data available */
-           epicsEventSignal(scsReceiveNow);
-
-            /* print command to screen for testing */
-            if ((localCommandCode > POSITION) & 
-                  (debugLevel > DEBUG_MIN) &
-                  (debugLevel <= DEBUG_MED)) {
-               errlogPrintf ("sim receive command =  %s (%d)\n", 
-                     m2CmdName[localCommandCode], (int)localCommandCode); 
+               {
+                  errorLog ("timeout appending command to receiveQId", 1, ON);
+                  if (myTiltRxErrcount++ < 100) 
+                     epicsPrintf("timeout appending command to receiveQId\n");
+               }
             }
+
+            /*
+             * block received without error so update sequence
+             * counter
+             */
+            m2Ptr->page1.NR = m2Ptr->page0.NS;
          }
+         else {
+            errorLog ("tiltReceive - checksums fail", 1, ON);
+            if (myTiltRxErrcount++ < 100) 
+               epicsPrintf ("tiltReceive - checksums fail\n");
+         }
+
+         /* package status data to return to SCS */
+         m2Ptr->page1.heartbeat = m2Heartbeat++;
+         m2Ptr->page1.checksum = checkSum ((void *) &m2Ptr->page1.NR, 
+               STATUS_BLOCK_SIZE);
+
+         epicsMutexUnlock(m2MemFree);
+	 mutex6++;
+       } else {
+         errorLog ("tiltReceive - couldn't obtain m2MemFree mutex", 1, ON);
+       }
+         /* flag status data available */
+	     scsrx5++;
+         epicsEventSignal(scsReceiveNow);
+
+         /* print command to screen for testing */
+         if ((localCommandCode > POSITION) & 
+               (debugLevel > DEBUG_MIN) &
+               (debugLevel <= DEBUG_MED)) {
+            errlogPrintf ("sim receive command =  %s (%d)\n", 
+                  m2CmdName[localCommandCode], (int)localCommandCode); 
+         }
+      }
       else {
          if(simLevel != 0) {
             errorLog ("tiltReceive - scsDataAvailable timeout", 1, ON);
@@ -2357,6 +2402,13 @@ void tiltReceive (void)
 
 /* ===================================================================== */
 
+static int scsrx1= 0; 
+static int scsrx2= 0;
+static int scsrx3= 0;
+static int scsrx3a= 0;
+static int scsrx3b= 0;
+static int scsrx4= 0;
+
 void scsReceive (void)
 {
    long simCheck = 0xabcd;
@@ -2364,12 +2416,15 @@ void scsReceive (void)
 
    for (;;)
    {
-      if (epicsEventWaitWithTimeout(scsReceiveNow, RECEIVE_TIMEOUT) == epicsEventWaitOK)
+      if (epicsEventWaitWithTimeout(scsReceiveNow, waittime2) == epicsEventWaitOK)
       {
+         scsrx1++; 
+         /*errlogPrintf ("nodeId = %d, counter = %d\n", nodeISR2, isr2);*/
          if (simLevel == 0)
          {
             /* no simulation active, grab data from reflective memory */
 
+            scsrx2++; 
             localStatusBlock = *(statusBlock *) & scsBase->page1;
 
             /* grab the engineering data for logging */
@@ -2383,19 +2438,23 @@ void scsReceive (void)
              * make it toggle-able via dm screen access and global
              * variable: m2CircBufferActive, for eg. */
 
-#ifndef MK
-             
+            // TODO: 
+            //       Implement OSI conversion for m2CircBufferTask in m2Log.c
+            //       Mike, Matt, Ignacio
             // m2CircBufferTask (scsBase);
-#endif
-            
+
          }
          else
          {
             /* simulation active, get data from m2 buffers */
-            epicsMutexLock(m2MemFree);
-            localStatusBlock = *(statusBlock *) & m2Ptr->page1;
-            epicsMutexUnlock(m2MemFree);
-
+	    if ( m2MemFree ) {
+               epicsMutexLock(m2MemFree);
+               localStatusBlock = *(statusBlock *) & m2Ptr->page1;
+               epicsMutexUnlock(m2MemFree);
+            } else {
+               errorLog ("scsReceive - couldn't obtain m2MemFree mutex", 1, ON);
+            }
+	    
             /* grab the engineering data for logging */
             // m2LoggerTask (m2Ptr);
          }
@@ -2415,56 +2474,63 @@ void scsReceive (void)
 
          if (simCheck == localStatusBlock.checksum)
          {
-            if (local.m2Heartbeat == localStatusBlock.heartbeat)
-            {
-               errorLog ("scsReceive - heartbeat stuck", 1, ON);
-            }
-            else
-            {
-               /* all is well, copy the checked data to the scs buffer */
-               local.m2Heartbeat = localStatusBlock.heartbeat;
+             if (local.m2Heartbeat == localStatusBlock.heartbeat)
+             {
+                 scsrx3++; 
+                 /*errlogPrintf ("scsReceive - heartbeat stuck local=%ld, statblkHB=%ld\n",*/
+                         /*local.m2Heartbeat, localStatusBlock.heartbeat);*/
+             }
+             else
+             {
+                 scsrx3a++; 
+                 /* all is well, copy the checked data to the scs buffer */
+                 /*errlogPrintf ("scsReceive - heartbeat not stuck local=%ld, statblkHB=%ld\n",*/
+                         /*local.m2Heartbeat, localStatusBlock.heartbeat);*/
+                 local.m2Heartbeat = localStatusBlock.heartbeat;
 
-               epicsMutexLock(refMemFree);
-               *(statusBlock *) & scsPtr->page1 = localStatusBlock;
-               epicsMutexUnlock(refMemFree);
+		         if (refMemFree) {
+                    epicsMutexLock(refMemFree);
+                    *(statusBlock *) & scsPtr->page1 = localStatusBlock;
+                    epicsMutexUnlock(refMemFree); 
+		            scsrx3b++; 
+                 } else {
+                   errorLog ("scsReceive - couldn't obtain refMemFree mutex", 1, ON);
+                 }
 
+                 if (local.NS != localStatusBlock.NR)
+                 {
+                     errlogPrintf  ("scsReceive - frame unacknowledged localNS=%ld, statblkNR=%ld\n",
+                             local.NS, localStatusBlock.NR);
+                 }
 
-               if (local.NS != localStatusBlock.NR)
-               {
-                  errorLog ("scsReceive - frame unacknowledged", 1, ON);
-               }
+                 if (local.testRequest == 0 && 
+                         localStatusBlock.statusWord.flags.diagnosticsAvailable == 1)
+                 {
+                     *(diagBlock *) & scsPtr->testResults = 
+                         *(diagBlock *) & m2Ptr->testResults;
+                     epicsEventSignal(diagnosticsAvailable);
+                 }
 
-               if (local.testRequest == 0 && 
-                     localStatusBlock.statusWord.flags.diagnosticsAvailable == 1)
-               {
-                  *(diagBlock *) & scsPtr->testResults = 
-                     *(diagBlock *) & m2Ptr->testResults;
-                  epicsEventSignal(diagnosticsAvailable);
-               }
-
-               local.testRequest = 
-                  scsPtr->page1.statusWord.flags.diagnosticsAvailable;
-            }
+                 local.testRequest = 
+                     scsPtr->page1.statusWord.flags.diagnosticsAvailable;
+             }
          }
          else
          {
-#ifdef MK
-            if ((debugLevel > DEBUG_NONE) & (debugLevel <= DEBUG_MED))
-#else
-            if (debugLevel > DEBUG_RESERVED1)
-#endif
-            {
-               sprintf(errBuff, "checksum calc = %lx, received = %lx\n", 
-                     simCheck, localStatusBlock.checksum);
-               errlogPrintf("%s", errBuff);
-            }
-            errorLog ("scsReceive - checksum fail", 1, ON);
+             if (debugLevel > DEBUG_RESERVED1)
+             {
+                 sprintf(errBuff, "checksum calc = %lx, received = %lx\n", 
+                         simCheck, localStatusBlock.checksum);
+                 errlogPrintf("%s", errBuff);
+             }
+             errorLog ("scsReceive - checksum fail", 1, ON);
          }
       }
       else
       {
+         scsrx4++; 
          errorLog ("scsReceive - scsReceiveNow timeout", 1, ON);
-         errlogMessage("rscsReceive - scsReceiveNow timeout\n");
+         //errlogMessage("rscsReceive - scsReceiveNow timeout\n");
       }
    }
 }
@@ -2537,10 +2603,13 @@ int checkTiltStatus (void)
    };
 
    /* grab copy of m2 status word */
-
-   epicsMutexLock(refMemFree);
-   tiltStatusWord = scsPtr->page1.statusWord;
-   epicsMutexUnlock(refMemFree);
+   if (refMemFree) {
+      epicsMutexLock(refMemFree);
+      tiltStatusWord = scsPtr->page1.statusWord;
+      epicsMutexUnlock(refMemFree);
+   } else {
+      errorLog ("checkTiltStatus - couldn't obtain refMemFree mutex", 1, ON);
+   }
 
    /* if a fault has arisen that wasn't present before, set health bad */
    if (tiltStatusWord.flags.health != 0 && errorLatch.health == 0)
@@ -2685,35 +2754,39 @@ int updateEventPage (int scsInPosition, int scsPresentBeam)
 
    int myScsInPosition = 0;
 
-   /* Protect eventData access to the eventData structure */
-   epicsMutexLock(eventDataSem); 
+   if ( eventDataSem ) {
+      /* Protect eventData access to the eventData structure */
+      epicsMutexLock(eventDataSem); 
 
-   if (scsPresentBeam == BEAMA) {
-      /*Only switch beam logic on high beam */
-      currentBeam = BEAMA;
+      if (scsPresentBeam == BEAMA) {
+         /*Only switch beam logic on high beam */
+         currentBeam = BEAMA;
 
-      if (!guideOnA) 
-         myScsInPosition = 0;
-      else 
-         myScsInPosition = scsInPosition; 
-   }
-   else if (scsPresentBeam == BEAMB) {
+         if (!guideOnA) 
+            myScsInPosition = 0;
+         else 
+            myScsInPosition = scsInPosition; 
+      }
+      else if (scsPresentBeam == BEAMB) {
 
-      /*Only switch beam logic on high beam */
-      currentBeam = BEAMB;
+         /*Only switch beam logic on high beam */
+         currentBeam = BEAMB;
 
-      if (!guideOnB) 
-         myScsInPosition = 0;
-      else
-         myScsInPosition = scsInPosition;
-   }
-   else {
+         if (!guideOnB) 
+            myScsInPosition = 0;
+         else
+            myScsInPosition = scsInPosition;
+      }
+      else {
          myScsInPosition = 0; /* Anything other than Beam A|B is invalid*/
-   }
+      }
 
-   eventData.inPosition = myScsInPosition;
-   eventData.currentBeam = currentBeam;
-   epicsMutexUnlock(eventDataSem);
+      eventData.inPosition = myScsInPosition;
+      eventData.currentBeam = currentBeam;
+      epicsMutexUnlock(eventDataSem);
+   } else {
+      errorLog ("updateEventPage - couldn't obtain eventDataSem mutex", 1, ON);
+   }
 
 
    nodeISR3 = -99;
@@ -2759,6 +2832,10 @@ int updateEventPage (int scsInPosition, int scsPresentBeam)
  * History:
  * 05-Dec-1997: Original(srp)
  *
+ *
+ *
+ * TODO: Check change in timing for thread sleep. Matt, Mike, Ignacio
+ * Check SEM_TIMEOUT and verify the need for threadSleep.
  */
 /* ===================================================================== */
 
@@ -2772,7 +2849,7 @@ long writeCommand (const long command)
    if (interlockFlag != ON)
    {
       // taskDelay(sysClkRateGet()/3);  
-                epicsThreadSleep(1.0/3.0);
+      epicsThreadSleep(1.0/3.0);
 
       if (epicsMessageQueueSendWithTimeout(commandQId, (char *)&localCommand, sizeof (long), SEM_TIMEOUT) == ERROR)
       {
@@ -2829,25 +2906,28 @@ long writeCommand (const long command)
 
 /* ===================================================================== */
 static int frameConvert (converted *result, 
-                frameChange *f, 
-                const double x, 
-                const double y, 
-                const double z)
+      frameChange *f, 
+      const double x, 
+      const double y, 
+      const double z)
 {
-    /* check that frame structure has been initialised */
-    if (f == NULL || result == NULL) {
-        errlogMessage("frame conversion pointers not initialised\n");
-        return(ERROR);
-    }
+   /* check that frame structure has been initialised */
+   if (f == NULL || result == NULL) {
+      errlogMessage("frame conversion pointers not initialised\n");
+      return(ERROR);
+   }
 
-    /* access frame */
-    epicsMutexLock(f->access); 
-    /* perform the conversion */
-    result->x = f->scaleX*(f->cosTheta*x - f->sinTheta*y) + f->offsetX;
-    result->y = f->scaleY*(f->sinTheta*x + f->cosTheta*y) + f->offsetY;
-    result->z = f->scaleZ * z;
-    epicsMutexUnlock(f->access);
-
+   /* access frame */
+   if ( f->access ) {
+      epicsMutexLock(f->access); 
+      /* perform the conversion */
+      result->x = f->scaleX*(f->cosTheta*x - f->sinTheta*y) + f->offsetX;
+      result->y = f->scaleY*(f->sinTheta*x + f->cosTheta*y) + f->offsetY;
+      result->z = f->scaleZ * z;
+      epicsMutexUnlock(f->access);
+   } else {
+      errorLog ("frameConvert - couldn't obtain f->access mutex", 1, ON);
+   }
    return OK;
 }
 
@@ -2893,43 +2973,43 @@ static int frameConvert (converted *result,
 
 double iir_filter (const double input, MATLAB * iir)
 {
-  double *inPtr = NULL, *outPtr = NULL, *aPtr = NULL, *bPtr = NULL;
+   double *inPtr = NULL, *outPtr = NULL, *aPtr = NULL, *bPtr = NULL;
 
-  iir->inHistory[0] = input;
-  iir->outHistory[0] = 0;
+   iir->inHistory[0] = input;
+   iir->outHistory[0] = 0;
 
-  inPtr = iir->inHistory + iir->nb - 1;
-  bPtr = iir->numerator + iir->nb - 1;
-  outPtr = iir->outHistory + iir->na - 1;
-  aPtr = iir->denominator + iir->na - 1;
+   inPtr = iir->inHistory + iir->nb - 1;
+   bPtr = iir->numerator + iir->nb - 1;
+   outPtr = iir->outHistory + iir->na - 1;
+   aPtr = iir->denominator + iir->na - 1;
 
-  while (inPtr >= iir->inHistory) {
-    *iir->outHistory += (*bPtr--) * (*inPtr--);
-  }
+   while (inPtr >= iir->inHistory) {
+      *iir->outHistory += (*bPtr--) * (*inPtr--);
+   }
 
-  while (outPtr > iir->outHistory) {
-    *iir->outHistory -= (*aPtr--) * (*outPtr--);
-  }
+   while (outPtr > iir->outHistory) {
+      *iir->outHistory -= (*aPtr--) * (*outPtr--);
+   }
 
-  /* ripple histories ready for next sample */
-  inPtr = iir->inHistory + iir->nb - 1;
-  bPtr = iir->numerator + iir->nb - 1;
-  outPtr = iir->outHistory + iir->na - 1;
-  aPtr = iir->denominator + iir->na - 1;
+   /* ripple histories ready for next sample */
+   inPtr = iir->inHistory + iir->nb - 1;
+   bPtr = iir->numerator + iir->nb - 1;
+   outPtr = iir->outHistory + iir->na - 1;
+   aPtr = iir->denominator + iir->na - 1;
 
-     while (inPtr > iir->inHistory)
-     {
-          *inPtr = *(inPtr - 1);
-          inPtr--;
-     }
+   while (inPtr > iir->inHistory)
+   {
+      *inPtr = *(inPtr - 1);
+      inPtr--;
+   }
 
-     while (outPtr > iir->outHistory)
-     {
-          *outPtr = *(outPtr - 1);
-          outPtr--;
-     }
+   while (outPtr > iir->outHistory)
+   {
+      *outPtr = *(outPtr - 1);
+      outPtr--;
+   }
 
-     return (iir->outHistory[0]);
+   return (iir->outHistory[0]);
 }
 
 
@@ -2937,87 +3017,83 @@ double iir_filter (const double input, MATLAB * iir)
    16-Aug-2000: added Ax,Ay,Bx,By position demands */
 int saveCb ()
 {
-    char fileName[80];
-    double fileTime;
-    int i;
-    FILE *pFile;
+   char fileName[80];
+   double fileTime;
+   int i;
+   FILE *pFile;
 
-    
-    if (timeNow(&fileTime) != OK)
-    {
-   errorLog ("saveCb - error reading timeStamp\n", 1, ON);
-   return (ERROR);
-    }
 
-    sprintf(fileName, "./chop-guide-%d.log", (int)fileTime);
-    pFile = fopen ( fileName, "w" );
+   if (timeNow(&fileTime) != OK)
+   {
+      errorLog ("saveCb - error reading timeStamp\n", 1, ON);
+      return (ERROR);
+   }
 
-    if ( pFile == (FILE *) NULL )
-    {
-        epicsPrintf ( "error opening file %s\n", fileName );
-        return (ERROR);
-    }
+   sprintf(fileName, "/gem_sw/work/data/M2/chop-guide-%d.log", (int)fileTime);
+   pFile = fopen ( fileName, "w" );
 
-    for ( i = cbCounter ; i < CB_RECORD_NB ; i ++ ) 
-    {
-        //fprintf ( pFile, "  3 %f %f %f %ld %d\n", 
+   if ( pFile == (FILE *) NULL )
+   {
+      epicsPrintf ( "error opening file %s\n", fileName );
+      return (ERROR);
+   }
+
+   for ( i = cbCounter ; i < CB_RECORD_NB ; i ++ ) 
+   {
+      //fprintf ( pFile, "  3 %f %f %f %ld %d\n", 
       //cbTime[i], cbP2Time[i], cbP2Interval[i], cbTick[i], i);
-        fprintf ( pFile, "  3 %f %f %f %d\n", 
-      cbTime[i], cbP2Time[i], cbP2Interval[i], i);
-        fprintf ( pFile, "  4 %+4.2f %+4.2f %+4.2f\n", 
-      cbXRawGuide[i], cbYRawGuide[i], cbZRawGuide[i]);
-        fprintf ( pFile, "  7 %+4.2f %+4.2f %+4.2f\n", 
-      cbXGuideBeforePID[i], cbYGuideBeforePID[i], 
-                cbZGuideBeforePID[i]);
-        fprintf ( pFile, "  8 %+4.2f %+4.2f %+4.2f\n", 
-      cbXGuideAfterPID[i], cbYGuideAfterPID[i], cbZGuideAfterPID[i]);
-        fprintf ( pFile, "  9 %+4.2f %+4.2f %+4.2f\n", 
-      cbXGuideDemand[i], cbYGuideDemand[i], cbZGuideDemand[i]);
-   fprintf ( pFile, " 10 %1d %1d %1d %1d\n",
-                 cbCurBeam[i], cbApplyGuide[i], cbGuideOnA[i], cbInPos[i] );
-        fprintf ( pFile, " 11 %+4.2f %+4.2f %4.2f %4.2f\n", 
-      cbAXDemand[i], cbAYDemand[i], cbBXDemand[i], cbBYDemand[i]);
+      fprintf ( pFile, "  3 %f %f %f %d\n", 
+            cbTime[i], cbP2Time[i], cbP2Interval[i], i);
+      fprintf ( pFile, "  4 %+4.2f %+4.2f %+4.2f\n", 
+            cbXRawGuide[i], cbYRawGuide[i], cbZRawGuide[i]);
+      fprintf ( pFile, "  7 %+4.2f %+4.2f %+4.2f\n", 
+            cbXGuideBeforePID[i], cbYGuideBeforePID[i], 
+            cbZGuideBeforePID[i]);
+      fprintf ( pFile, "  8 %+4.2f %+4.2f %+4.2f\n", 
+            cbXGuideAfterPID[i], cbYGuideAfterPID[i], cbZGuideAfterPID[i]);
+      fprintf ( pFile, "  9 %+4.2f %+4.2f %+4.2f\n", 
+            cbXGuideDemand[i], cbYGuideDemand[i], cbZGuideDemand[i]);
+      fprintf ( pFile, " 10 %1d %1d %1d %1d\n",
+            cbCurBeam[i], cbApplyGuide[i], cbGuideOnA[i], cbInPos[i] );
+      fprintf ( pFile, " 11 %+4.2f %+4.2f %4.2f %4.2f\n", 
+            cbAXDemand[i], cbAYDemand[i], cbBXDemand[i], cbBYDemand[i]);
 
-#ifdef MK
-        fprintf ( pFile, " 13 %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f \n", 
-      cbVTKXCommand[i], cbVTKXPhaseOld[i], cbVTKXPhaseNew[i], cbVTKXFrequency[i], cbVTKXIntegrator0[i], cbVTKXIntegrator1[i], cbXGuideBeforePID[i], cbXGuidePhasor[i], cbXGuideAfterPID[i], cbXGuideDemand[i]);
-        fprintf ( pFile, " 15 %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f \n", 
-      cbVTKYCommand[i], cbVTKYPhaseOld[i], cbVTKYPhaseNew[i], cbVTKYFrequency[i], cbVTKYIntegrator0[i], cbVTKYIntegrator1[i], cbYGuideBeforePID[i], cbYGuidePhasor[i], cbYGuideAfterPID[i], cbYGuideDemand[i]);
-#endif
-    }
+      fprintf ( pFile, " 13 %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f \n", 
+            cbVTKXCommand[i], cbVTKXPhaseOld[i], cbVTKXPhaseNew[i], cbVTKXFrequency[i], cbVTKXIntegrator0[i], cbVTKXIntegrator1[i], cbXGuideBeforePID[i], cbXGuidePhasor[i], cbXGuideAfterPID[i], cbXGuideDemand[i]);
+      fprintf ( pFile, " 15 %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f \n", 
+            cbVTKYCommand[i], cbVTKYPhaseOld[i], cbVTKYPhaseNew[i], cbVTKYFrequency[i], cbVTKYIntegrator0[i], cbVTKYIntegrator1[i], cbYGuideBeforePID[i], cbYGuidePhasor[i], cbYGuideAfterPID[i], cbYGuideDemand[i]);
+   }
 
-    /* write from beginning of array to newest data */
-    for ( i = 0 ; i < cbCounter ; i ++ )
-    {
-        //fprintf ( pFile, "  3 %f %f %f %ld %d\n", 
-   //   cbTime[i], cbP2Time[i], cbP2Interval[i], cbTick[i], i);
-        fprintf ( pFile, "  3 %f %f %f %d\n", 
-      cbTime[i], cbP2Time[i], cbP2Interval[i], i);
-        fprintf ( pFile, "  4 %+4.2f %+4.2f %+4.2f\n", 
-      cbXRawGuide[i], cbYRawGuide[i], cbZRawGuide[i]);
-        fprintf ( pFile, "  7 %+4.2f %+4.2f %+4.2f\n", 
-      cbXGuideBeforePID[i], cbYGuideBeforePID[i], 
-                cbZGuideBeforePID[i]);
-        fprintf ( pFile, "  8 %+4.2f %+4.2f %+4.2f\n", 
-      cbXGuideAfterPID[i], cbYGuideAfterPID[i], cbZGuideAfterPID[i]);
-        fprintf ( pFile, "  9 %+4.2f %+4.2f %+4.2f\n", 
-      cbXGuideDemand[i], cbYGuideDemand[i], cbZGuideDemand[i]);
-   fprintf ( pFile, " 10 %1d %1d %1d %1d\n",
-                 cbCurBeam[i], cbApplyGuide[i], cbGuideOnA[i], cbInPos[i] );
-        fprintf ( pFile, " 11 %+4.2f %+4.2f %4.2f %4.2f\n", 
-      cbAXDemand[i], cbAYDemand[i], cbBXDemand[i], cbBYDemand[i]);
+   /* write from beginning of array to newest data */
+   for ( i = 0 ; i < cbCounter ; i ++ )
+   {
+      //fprintf ( pFile, "  3 %f %f %f %ld %d\n", 
+      //   cbTime[i], cbP2Time[i], cbP2Interval[i], cbTick[i], i);
+      fprintf ( pFile, "  3 %f %f %f %d\n", 
+            cbTime[i], cbP2Time[i], cbP2Interval[i], i);
+      fprintf ( pFile, "  4 %+4.2f %+4.2f %+4.2f\n", 
+            cbXRawGuide[i], cbYRawGuide[i], cbZRawGuide[i]);
+      fprintf ( pFile, "  7 %+4.2f %+4.2f %+4.2f\n", 
+            cbXGuideBeforePID[i], cbYGuideBeforePID[i], 
+            cbZGuideBeforePID[i]);
+      fprintf ( pFile, "  8 %+4.2f %+4.2f %+4.2f\n", 
+            cbXGuideAfterPID[i], cbYGuideAfterPID[i], cbZGuideAfterPID[i]);
+      fprintf ( pFile, "  9 %+4.2f %+4.2f %+4.2f\n", 
+            cbXGuideDemand[i], cbYGuideDemand[i], cbZGuideDemand[i]);
+      fprintf ( pFile, " 10 %1d %1d %1d %1d\n",
+            cbCurBeam[i], cbApplyGuide[i], cbGuideOnA[i], cbInPos[i] );
+      fprintf ( pFile, " 11 %+4.2f %+4.2f %4.2f %4.2f\n", 
+            cbAXDemand[i], cbAYDemand[i], cbBXDemand[i], cbBYDemand[i]);
 
-#ifdef MK
-        fprintf ( pFile, " 13 %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f \n", 
-      cbVTKXCommand[i], cbVTKXPhaseOld[i], cbVTKXPhaseNew[i], cbVTKXFrequency[i], cbVTKXIntegrator0[i], cbVTKXIntegrator1[i], cbXGuideBeforePID[i], cbXGuidePhasor[i], cbXGuideAfterPID[i], cbXGuideDemand[i]);
-        fprintf ( pFile, " 15 %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f \n", 
-      cbVTKYCommand[i], cbVTKYPhaseOld[i], cbVTKYPhaseNew[i], cbVTKYFrequency[i], cbVTKYIntegrator0[i], cbVTKYIntegrator1[i], cbYGuideBeforePID[i], cbYGuidePhasor[i], cbYGuideAfterPID[i], cbYGuideDemand[i]);
-#endif
+      fprintf ( pFile, " 13 %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f \n", 
+            cbVTKXCommand[i], cbVTKXPhaseOld[i], cbVTKXPhaseNew[i], cbVTKXFrequency[i], cbVTKXIntegrator0[i], cbVTKXIntegrator1[i], cbXGuideBeforePID[i], cbXGuidePhasor[i], cbXGuideAfterPID[i], cbXGuideDemand[i]);
+      fprintf ( pFile, " 15 %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f %+7.5f \n", 
+            cbVTKYCommand[i], cbVTKYPhaseOld[i], cbVTKYPhaseNew[i], cbVTKYFrequency[i], cbVTKYIntegrator0[i], cbVTKYIntegrator1[i], cbYGuideBeforePID[i], cbYGuidePhasor[i], cbYGuideAfterPID[i], cbYGuideDemand[i]);
 
-    }
+   }
 
-    fclose (pFile);
-    return (OK);
+   fclose (pFile);
+   return (OK);
 }
 
 
@@ -3068,11 +3144,11 @@ int saveCb ()
  *-
  */
 
-double newDfilter
-   (
-   double newSample,
-   int Id
-   )
+   double newDfilter
+(
+ double newSample,
+ int Id
+ )
 {
    int i = 0;
    double sum = 0;
@@ -3098,99 +3174,98 @@ double newDfilter
 }
 
 
-#ifdef MK
 /****
  *
  *
  */
 void phasorShowX() {
 
-    _phasorShow(&phasorX);
+   _phasorShow(&phasorX);
 }
 
 void phasorShowY() {
 
-    _phasorShow(&phasorY);
+   _phasorShow(&phasorY);
 }
 
 void vtkShowX() {
-    _vtkShow(&vtkX);
+   _vtkShow(&vtkX);
 }
 
 void vtkShowY() {
-    _vtkShow(&vtkY);
+   _vtkShow(&vtkY);
 }
 
 void vtkResetX() {
-    /**
-     * epicsPrintf("VTK Reseting X...\n");
-     */
-    _vtkReset(&vtkX);
+   /**
+    * epicsPrintf("VTK Reseting X...\n");
+    */
+   _vtkReset(&vtkX);
 }
 
 void vtkResetY() {
-    /*
-     * epicsPrintf("VTK Reseting Y...\n");
-     */
-    _vtkReset(&vtkY);
+   /*
+    * epicsPrintf("VTK Reseting Y...\n");
+    */
+   _vtkReset(&vtkY);
 }
 
 void vtkxon() {
 
-    epicsPrintf("VTK Turning on X...\n");
-    vibrationXTrackOn = 1;
-    _vtkReset(&vtkX);
+   epicsPrintf("VTK Turning on X...\n");
+   vibrationXTrackOn = 1;
+   _vtkReset(&vtkX);
 }
 
 void vtkxoff() {
-    epicsPrintf("VTK Turning off X...\n");
-    vibrationXTrackOn = 0;
+   epicsPrintf("VTK Turning off X...\n");
+   vibrationXTrackOn = 0;
 
 }
 
 void vtkyon() {
 
-    epicsPrintf("VTK Turning on Y...\n");
-    vibrationYTrackOn = 1;
-    _vtkReset(&vtkY);
+   epicsPrintf("VTK Turning on Y...\n");
+   vibrationYTrackOn = 1;
+   _vtkReset(&vtkY);
 }
 
 void vtkyoff() {
-    epicsPrintf("VTK Turning off Y...\n");
-    vibrationYTrackOn = 0;
+   epicsPrintf("VTK Turning off Y...\n");
+   vibrationYTrackOn = 0;
 }
 
 void swxon() {
-    epicsPrintf("SW Turning on X...\n");
-    phasorXApply = 1;
-    xTiltGuideSimScale = 1.0;
+   epicsPrintf("SW Turning on X...\n");
+   phasorXApply = 1;
+   xTiltGuideSimScale = 1.0;
 }
 
 void swxoff() {
-    epicsPrintf("SW Turning off X...\n");
-    phasorXApply = 0;
-    xTiltGuideSimScale = 1.0;
+   epicsPrintf("SW Turning off X...\n");
+   phasorXApply = 0;
+   xTiltGuideSimScale = 1.0;
 }
 
 void swyon() {
-    epicsPrintf("SW Turning on Y...\n");
-    phasorYApply = 1;
-    yTiltGuideSimScale = 1.0;
+   epicsPrintf("SW Turning on Y...\n");
+   phasorYApply = 1;
+   yTiltGuideSimScale = 1.0;
 }
 
 void swyoff() {
-    epicsPrintf("SW Turning off Y...\n");
-    phasorYApply = 0;
-    yTiltGuideSimScale = 1.0;
+   epicsPrintf("SW Turning off Y...\n");
+   phasorYApply = 0;
+   yTiltGuideSimScale = 1.0;
 }
 
 void setVtkX(Vtk *vtkx) {
 
-    
+
 }
 
 Vtk* getVtkX(void) {
-    return &vtkX;
+   return &vtkX;
 }
 
 void setVtkY(Vtk *vtky) {
@@ -3199,105 +3274,148 @@ void setVtkY(Vtk *vtky) {
 
 
 Vtk* getVtkY(void) {
-    return &vtkY;
+   return &vtkY;
 
 }
 
 Phasor* getPhasorX(void) {
-    return &phasorX;
+   return &phasorX;
 }
 
 Phasor* getPhasorY(void) {
-    return &phasorY;
+   return &phasorY;
 }
 
 long srmisscount;
 int checkGuideModeChange( long mode) {
-    
-    static int currentmode = GUIDE_200_HZ; /*default mode is 200 Hz*/
-    
-    /*Only change if new mode is different*/
-    if(mode == currentmode) {
-        return(ERROR);
-    }
 
-    switch (mode) {
-        case GUIDE_200_HZ:
-            vtkX.Fs = 198.9; 
-            vtkX.scale = 1.758;
-            vtkX.angle = -15.9;
+   static int currentmode = GUIDE_200_HZ; /*default mode is 200 Hz*/
 
-            vtkY.Fs = 198.9; 
-            vtkY.scale = 1.758;
-            vtkY.angle = -15.9;
+   /*Only change if new mode is different*/
+   if(mode == currentmode) {
+      return(ERROR);
+   }
 
-            break;
+   switch (mode) {
+      case GUIDE_200_HZ:
+         vtkX.Fs = 198.9; 
+         vtkX.scale = 1.758;
+         vtkX.angle = -15.9;
 
-        case GUIDE_100_HZ:    
-            vtkX.Fs = 99.5; 
-            vtkX.scale = 1.591;
-            vtkX.angle = 15.3;
+         vtkY.Fs = 198.9; 
+         vtkY.scale = 1.758;
+         vtkY.angle = -15.9;
 
-            vtkY.Fs = 99.5; 
-            vtkY.scale = 1.591;
-            vtkY.angle = 15.3;
+         break;
 
-            break;
+      case GUIDE_100_HZ:    
+         vtkX.Fs = 99.5; 
+         vtkX.scale = 1.591;
+         vtkX.angle = 15.3;
 
-        case GUIDE_50_HZ:    
+         vtkY.Fs = 99.5; 
+         vtkY.scale = 1.591;
+         vtkY.angle = 15.3;
 
-            vtkX.Fs = 49.8; 
-            vtkX.scale = 1.637;
-            vtkX.angle = 47.1;
+         break;
 
-            vtkY.Fs = 49.8; 
-            vtkY.scale = 1.637;
-            vtkY.angle = 47.1;
-            break;
+      case GUIDE_50_HZ:    
 
-        case GUIDE_20_HZ:    
+         vtkX.Fs = 49.8; 
+         vtkX.scale = 1.637;
+         vtkX.angle = 47.1;
 
-            vtkX.Fs = 19.9; 
-            vtkX.scale = 1.758;
-            vtkX.angle = -15.9;
+         vtkY.Fs = 49.8; 
+         vtkY.scale = 1.637;
+         vtkY.angle = 47.1;
+         break;
 
-            vtkY.Fs = 19.9; 
-            vtkY.scale = 1.758;
-            vtkY.angle = -15.9;
+      case GUIDE_20_HZ:    
 
-            break;
+         vtkX.Fs = 19.9; 
+         vtkX.scale = 1.758;
+         vtkX.angle = -15.9;
 
-        default:
-            /*
-             * 
-             * sprintf(errBuff, "checkGuideModeChange: unknown mode: %d, input srate=%f\n", mode, srate);
-             *
-             * logMsg("%s", (int)errBuff, 0, 0, 0, 0, 0);
-             */
+         vtkY.Fs = 19.9; 
+         vtkY.scale = 1.758;
+         vtkY.angle = -15.9;
 
-            srmisscount++;
+         break;
 
-            /*Unsuported modes return early and don't change VTK.*/
-            return(ERROR);
-    }
-    
-    guideInfo.vtkXdata[0] = vtkX.scale;
-    guideInfo.vtkXdata[1] = vtkX.angle;
-    guideInfo.vtkXdata[2] = vtkX.Fs;
+      default:
+         /*
+          * 
+          * sprintf(errBuff, "checkGuideModeChange: unknown mode: %d, input srate=%f\n", mode, srate);
+          *
+          * logMsg("%s", (int)errBuff, 0, 0, 0, 0, 0);
+          */
 
-    guideInfo.vtkYdata[0] = vtkY.scale;
-    guideInfo.vtkYdata[1] = vtkY.angle;
-    guideInfo.vtkYdata[2] = vtkY.Fs;
+         srmisscount++;
 
-    /*Reinitialize VTK with new settings*/
-    vtkResetX();
-    vtkResetY();
-    vtkInit(&vtkX);
-    vtkInit(&vtkY);
+         /*Unsuported modes return early and don't change VTK.*/
+         return(ERROR);
+   }
 
-    currentmode = mode;
-    return(OK);
+   guideInfo.vtkXdata[0] = vtkX.scale;
+   guideInfo.vtkXdata[1] = vtkX.angle;
+   guideInfo.vtkXdata[2] = vtkX.Fs;
+
+   guideInfo.vtkYdata[0] = vtkY.scale;
+   guideInfo.vtkYdata[1] = vtkY.angle;
+   guideInfo.vtkYdata[2] = vtkY.Fs;
+
+   /*Reinitialize VTK with new settings*/
+   vtkResetX();
+   vtkResetY();
+   vtkInit(&vtkX);
+   vtkInit(&vtkY);
+
+   currentmode = mode;
+   return(OK);
 }
 
-#endif
+epicsExportAddress(int, procGuideCount1 );
+epicsExportAddress(int, procGuideCount2 );
+epicsExportAddress(int, procGuideCount3 );
+epicsExportAddress(int, procGuideCount4 );
+epicsExportAddress(int, procGuideCount5 );
+epicsExportAddress(int, procGuideCount6 );
+epicsExportAddress(int, procGuideCount7 );
+epicsExportAddress(int, procGuideCount8 );
+epicsExportAddress(int, procGuideCount9 );
+epicsExportAddress(int, procGuideCount10 );
+epicsExportAddress(int, scsrx1 );
+epicsExportAddress(int, scsrx2 );
+epicsExportAddress(int, scsrx3 );
+epicsExportAddress(int, scsrx3a );
+epicsExportAddress(int, scsrx3b );
+epicsExportAddress(int, scsrx4 );
+epicsExportAddress(int, scsrx5 );
+epicsExportAddress(int, isr2 );
+epicsExportAddress(int, isr3 );
+epicsExportAddress(int, showcs );
+epicsExportAddress(int, sendpulse );
+epicsExportAddress(int, simLevel );
+epicsExportAddress(int, interlockFlag );
+epicsExportAddress(int,  refmem_mon1);
+epicsExportAddress(double, waittime );
+epicsExportAddress(double, waittime2 );
+epicsExportAddress(int, mutex1 );
+epicsExportAddress(int, mutex2 );
+epicsExportAddress(int, mutex3 );
+epicsExportAddress(int, mutex4 );
+epicsExportAddress(int, mutex5 );
+epicsExportAddress(int, mutex6 );
+epicsExportAddress(int, mutex7 );
+epicsExportAddress(int, mutex8 );
 
+/*
+epicsExportAddress(double, xDemandPg0 );
+epicsExportAddress(double, zFocusSmoothPg0 );
+epicsExportAddress(int, heartbeatPg0);
+epicsExportAddress(double, xTiltGuidePg0 );
+epicsExportAddress(double, yTiltGuidePg0 );
+epicsExportAddress(double, zFocusGuidePg0);
+epicsExportAddress(int, NSPg0);
+epicsExportAddress(int, fixVal);
+*/

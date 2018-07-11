@@ -71,21 +71,22 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <epicsExport.h>
+#include <iocsh.h>
+#include <registryFunction.h>
 
 #include <tcslib.h>
 #include <cad.h>
 #include <car.h>
 
 #include "guide.h"
-#include "archive.h"        /* For cadDirLog */
+#include "m2Log.h"          /* For cadDirLog */
+//#include "archive.h"        /* For cadDirLog */
 #include "control.h"        /* For simLevel, scsBase, m2Ptr, m2MemFree, 
                                interlockFlag, controller, *GuideTcs,
                                currentBeam */
 #include "utilities.h"      /* For weight2string, errorLog, debugLevel */
 #include "chop.h"           /* For chopIsOn */
-
-
-
 
 #define MAX_FILTER_CHANNELS 15  /* Used by dfilter to set array size */
 #define NUM_DECIMATORS  12      /* Number of channels needing decimation 
@@ -105,6 +106,11 @@
 
 #define DECIM_CUTOFF        0.05 /* cutoff for decimation filters 
                                     (1.0 = half sample frequency) */
+
+
+/* Local Declarations*/
+long initHighSpeed (struct genSubRecord *pgsub);
+long highSpeed (struct genSubRecord *pgsub);
 
 /* Guide source names */
 
@@ -147,9 +153,7 @@ static double dfilter(double newSample, int Id);
 
 anUpdateInterval updateInterval = { 0.0, 0.0, 0.0, 0.0  };
 
-#ifdef MK
 GuideInfo guideInfo = { 0.0, 0, {1.557,-9.7, 198.9}, {1.557,-9.7, 198.9}};
-#endif
 
 long guideOn;
 long guideSimOn;
@@ -176,9 +180,7 @@ int guideMaster[MAX_SOURCES][MAX_BEAMS] =
 
 MATLAB filter[MAX_SOURCES][MAX_AXES];
 
-#ifdef MK
 HighSpeed *highSpeedData;
-#endif
 
 
 /* ===================================================================== */
@@ -541,9 +543,7 @@ long CADguideControl (struct cadRecord * pcad)
                updateInterval.pwfs1 = 0.0;
                updateInterval.oiwfs = 0.0;
                updateInterval.gaos = 0.0;
-#ifndef MK
                updateInterval.gpi = 0.0;
-#endif
 
                /* zero the filtered error values for all sources */
 
@@ -660,14 +660,8 @@ long CADguideConfig (struct cadRecord * pcad)
      static double sampleFreq = 200.0, freq1 = 20.0, freq2 = 25.0 ;
 
      static double weightA, weightB, weightC;
-#ifdef MK
-     static char *sourceOpts[] = {"PWFS1", "PWFS2", "OIWFS", "GAOS", "GYRO",
-#else
-     static char *sourceOpts[] = {"PWFS1", "PWFS2", "OIWFS", "GAOS", "GYRO", "GPI",
-#endif
-                                  NULL } ;
-     static char *filterOpts[] = {"OFF", "RAW", "LOWPASS", "HIGHPASS",
-                                  "BANDPASS", "BANDSTOP", NULL} ;
+     static char *sourceOpts[] = {"PWFS1", "PWFS2", "OIWFS", "GAOS", "GYRO", "GPI", NULL } ;
+     static char *filterOpts[] = {"OFF", "RAW", "LOWPASS", "HIGHPASS", "BANDPASS", "BANDSTOP", NULL} ;
 
      cadDirLog ("guideConfig", pcad->dir, 10, pcad);
 
@@ -949,12 +943,9 @@ long guideConfig (struct genSubRecord *pgsub)
           strncpy (pgsub->vale, filterString, MAX_STRING_SIZE - 1);
           break;
 
-#ifndef MK
      case GPI:
           strncpy (pgsub->valf, filterString, MAX_STRING_SIZE - 1);
           break;
-#endif
-
 
      default:
           break;
@@ -977,9 +968,7 @@ long guideConfig (struct genSubRecord *pgsub)
           strncpy (pgsub->valc, filterString, MAX_STRING_SIZE - 1);
           strncpy (pgsub->vald, filterString, MAX_STRING_SIZE - 1);
           strncpy (pgsub->vale, filterString, MAX_STRING_SIZE - 1);
-#ifndef MK
           strncpy (pgsub->valf, filterString, MAX_STRING_SIZE - 1);
-#endif
 
      }
 
@@ -1180,9 +1169,6 @@ long CADguideReset (struct cadRecord * pcad)
      long status = CAD_REJECT;
      static int reset;
 
-#ifdef MK
-     // static double weightA, weightB, weightC;
-#endif
 
     static char *resetOpts[] = {"OFF", "ON", NULL} ;
 
@@ -1322,9 +1308,7 @@ long resetGuideConfig (struct genSubRecord *pgsub)
           strncpy (pgsub->valc, filterString, MAX_STRING_SIZE - 1);
           strncpy (pgsub->vald, filterString, MAX_STRING_SIZE - 1);
           strncpy (pgsub->vale, filterString, MAX_STRING_SIZE - 1);
-#ifndef MK
           strncpy (pgsub->valf, filterString, MAX_STRING_SIZE - 1);
-#endif
 
 
      /* set reset widget back to NULL */
@@ -1864,7 +1848,6 @@ static int readFilters (MATLAB * testFilter, int type, double freq1, double freq
      }
 }
 
-#ifdef MK
 void printHS() {
 
     int i;
@@ -1943,9 +1926,9 @@ long initHighSpeed (struct genSubRecord *pgsub) {
 
    printf("initHighSpeed\n");
    /*HighSpeed Initialize*/
-   if ((highSpeedData = (HighSpeed *) calloc (0, sizeof (*highSpeedData) ) ) == NULL)    
+   if ((highSpeedData = (HighSpeed *) calloc (1, sizeof (*highSpeedData) ) ) == NULL)    
    {
-       printf ("calloc fail on creation of highSpeedData buffer\n");
+       errMessage (0, "calloc fail on creation of highSpeedData buffer\n");
        return (ERROR);
    }
 
@@ -2128,7 +2111,6 @@ long highSpeed (struct genSubRecord *pgsub) {
 
      return (OK);
 }
-#endif
 
 /* ===================================================================== */
 /* INDENT OFF */
@@ -2242,6 +2224,8 @@ long initDecimate (struct genSubRecord * pgsub)
      return (OK);
 }
 
+static int  mutex13  = 0;
+static int  mutex14 = 0;
 
 long decimate (struct genSubRecord * pgsub)
 {
@@ -2268,15 +2252,14 @@ long decimate (struct genSubRecord * pgsub)
      double xp;
      double yp;
 
-#ifdef MK
      double *vtkxdata = (double *) pgsub->valt;
      double *vtkydata = (double *) pgsub->valu;
-#endif
 
      if(simLevel != 0)
      {
           /* simulation active */
-
+      /*  if ( m2MemFree ) { */
+	  mutex13++;
           epicsMutexLock(m2MemFree);
 
           tcsData.xTiltPos = (double) m2Ptr->page1.xTilt;
@@ -2294,6 +2277,10 @@ long decimate (struct genSubRecord * pgsub)
           tcsData.yPos = (double) m2Ptr->page1.yPosition;
 
           epicsMutexUnlock(m2MemFree);
+	  mutex14++;
+     /*   } else {
+         errorLog ("decimate - couldn't obtain m2MemFree mutex", 1, ON);
+       }  */
      }
      else
      {
@@ -2317,30 +2304,34 @@ long decimate (struct genSubRecord * pgsub)
 
      }
 
-     epicsMutexLock(setPointFree);
+/*      if ( setPointFree ) { */
+        epicsMutexLock(setPointFree);
 
-     switch (currentBeam)
-     {
-         case BEAMB:
-         case B2ARAMP:
-              tcsData.xNetTiltDmd = (double) setPoint.xTiltB;
-              tcsData.yNetTiltDmd = (double) setPoint.yTiltB;
-              break;
+        switch (currentBeam)
+        {
+            case BEAMB:
+            case B2ARAMP:
+                 tcsData.xNetTiltDmd = (double) setPoint.xTiltB;
+                 tcsData.yNetTiltDmd = (double) setPoint.yTiltB;
+                 break;
 
-         case BEAMC:
-              tcsData.xNetTiltDmd = (double) setPoint.xTiltC;
-              tcsData.yNetTiltDmd = (double) setPoint.yTiltC;
-              break;
+            case BEAMC:
+                 tcsData.xNetTiltDmd = (double) setPoint.xTiltC;
+                 tcsData.yNetTiltDmd = (double) setPoint.yTiltC;
+                 break;
 
-         default:
-              tcsData.xNetTiltDmd = (double) setPoint.xTiltA;
-              tcsData.yNetTiltDmd = (double) setPoint.yTiltA;
-     }
+            default:
+                 tcsData.xNetTiltDmd = (double) setPoint.xTiltA;
+                 tcsData.yNetTiltDmd = (double) setPoint.yTiltA;
+        }
 
-     tcsData.zNetDmd = (double) setPoint.zFocus;
+        tcsData.zNetDmd = (double) setPoint.zFocus;
 
-     epicsMutexUnlock(setPointFree);
-
+        epicsMutexUnlock(setPointFree); 
+ /*     } else {
+         errorLog ("decimate - couldn't obtain setPointFree mutex", 1, ON);
+     } 
+ */
 
      /* convert current position readings from m2 to tcs frame of reference */
 
@@ -2437,6 +2428,10 @@ long decimate (struct genSubRecord * pgsub)
 /*      *(double *) pgsub->valq = position1.xDmd - position1.xPos;
      *(double *) pgsub->valr = position1.yDmd - position1.yPos; */
 
+     /*
+      *
+      * TODO: Check if 0 block Mike, Matt, Ignacio
+      */
 #if 0
      if (debugLevel == DEBUG_RESERVED2)
         printf("xdem %f ydem %f xpos %f ypos %f \n",scsBase->page0.xDemand, 
@@ -2450,12 +2445,10 @@ long decimate (struct genSubRecord * pgsub)
      *(double *) pgsub->valq = xp; 
      *(double *) pgsub->valr = yp;
 
-#ifdef MK
      *(long *)   pgsub->vals = guideInfo.rate; /*Guide frequency 200Hz, 100Hz or 50Hz*/
 
      memcpy (vtkxdata, guideInfo.vtkXdata, 3*sizeof (double));
      memcpy (vtkydata, guideInfo.vtkYdata, 3*sizeof (double));
-#endif
 
      return (OK);
 }
@@ -2634,3 +2627,37 @@ static double dfilter(double newSample, int Id)
      return(sum);
 }
 
+/*Display filters*/
+static const iocshArg displayFilterArg0 = {"source", iocshArgInt };
+static const iocshArg displayFilterArg1 = {"axis", iocshArgInt };
+static const iocshArg *displayFilterArgs[] = {&displayFilterArg0, &displayFilterArg1};
+static const iocshFuncDef displayFilterFuncDef ={"displayFilters", 2, displayFilterArgs};
+
+static void displayFilterCallFunc(const iocshArgBuf *args)
+{
+    displayFilter( args[0].ival, args[1].ival);
+}
+
+static void displayFilterRegisterCommands(void)
+{
+    iocshRegister(&displayFilterFuncDef, displayFilterCallFunc);
+}
+
+epicsExportRegistrar(displayFilterRegisterCommands);
+
+epicsRegisterFunction(guideConfig);
+epicsRegisterFunction(resetGuideConfig);
+epicsRegisterFunction(initDecimate);
+epicsRegisterFunction(decimate);
+epicsRegisterFunction(lookupGuide);
+epicsRegisterFunction(highSpeed);
+epicsRegisterFunction(initHighSpeed);
+
+epicsRegisterFunction(CADclearGuideFocus);
+epicsRegisterFunction(CADclearTiltGuide);
+epicsRegisterFunction(CADguideControl);
+epicsRegisterFunction(CADguideConfig);
+epicsRegisterFunction(CADguideReset);
+
+epicsExportAddress(int, mutex13);
+epicsExportAddress(int, mutex14);

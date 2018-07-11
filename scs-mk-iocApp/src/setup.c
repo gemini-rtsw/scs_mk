@@ -41,6 +41,8 @@
 #include <stdlib.h>     /* for malloc() */
 #include <string.h>
 #include <stdio.h>
+#include <iocsh.h>
+#include <epicsExport.h>
 
 #include <dbAccess.h>   /* For dbNameToAddr */
 #include <devSup.h>     /* for S_dev_???   */
@@ -50,26 +52,41 @@
 #include "utilities.h"  /* For errorLog, loadInitFiles, compileStatus,
                            statusCompiled, doPvLoad, pvLoadComplete */
 #include "guide.h"      /* For createFilter, setPointFree */
-#include "archive.h"    /* For loggerTask, refMemFree, logCAddr */
+#include "m2Log.h"          /* For cadDirLog */
 #include "control.h"    /* For fireLoops, slowTransmit, scsReceive, scsPtr, 
                            scsBase, m2Ptr, m2MemFree, slowUpdate, wfsFree
                            diagnosticsAvailable, scsDataAvailable,
                            scsReceiveNow, commandQId, receiveQId 
                            SYSTEM_CLOCK_RATE */
 
-
-#define TOP "m2:"
-
-/* #define TRUESCSBASE     0xf0A00040      / * Base address of node 0 */
-#define TRUESCSBASE     0xfAA00040      /* Base address of node 0 
+#define TRUESCSBASE     0xf0A00040      / * Base address of node 0 
+/* #define TRUESCSBASE     0xfAA00040  */    /* Base address of node 0 
                                            reflective memory card (scs)  */
-/* #define TRUEM2BASE      0xf0600040      / * Base address of node 1 */
-#define TRUEM2BASE      0xfA600040      /* Base address of node 1 
+#define TRUEM2BASE      0xf0600040      / * Base address of node 1 
+
+/*
+#define TRUEM2BASE      0xfA600040  */    /* Base address of node 1 
                                            reflective memory card (m2 )  */
+extern void rmISR2(int);
+extern void rmISR3(int);
 
 /* Declare externals */
-
 epicsMessageQueueId  healthQId = NULL;
+
+int  scsConfigureISR(void) {
+
+
+    int status = ERROR;
+
+    if ( (status = rmIntConnect(2, rmISR2)) != OK) 
+        return status;
+
+    if ( (status = rmIntConnect(3, rmISR3)) != OK )
+        return status;
+
+    return status;
+    
+}
 
 /* ===================================================================== */
 /* INDENT OFF */
@@ -124,26 +141,21 @@ epicsMessageQueueId  healthQId = NULL;
 
 /* INDENT ON */
 /* ===================================================================== */
+static int  mutex15  = 0;
+static int  mutex16 = 0;
 
 int scsInit (void)
 {
    int source = PWFS1;
-   char pRecordName[MAX_STRING_SIZE];
 
+   if (scsConfigureISR() != OK) {
+
+       errlogSevPrintf(errlogMajor, "Failed to connect interrupts.\n");
+   }
 
    /* create semaphores to control pvload of initialisation files */
    doPvLoad = epicsEventMustCreate(epicsEventEmpty);
-   pvLoadComplete = epicsEventMustCreate(epicsEventEmpty);
-
-   /* get address of logging CAR record */
-
-   strncpy (pRecordName, TOP "logC.IVAL", MAX_STRING_SIZE);
-
-   if (dbNameToAddr (pRecordName, &logCAddr) != 0)
-   {
-      errlogPrintf("scsLogInit - unable to fetch address of logC CAR\n");
-      return (ERROR);
-   }
+   //pvLoadComplete = epicsEventMustCreate(epicsEventEmpty);
 
    /* mutex semaphore to prevent multiple access to guide data */
    for (source = PWFS1; source <= GYRO; source++)
@@ -160,40 +172,15 @@ int scsInit (void)
    /* create mutex semaphore to protect the set point values */
    setPointFree = epicsMutexCreate();
 
-   /* the vxWorks code had stacksize for all threads set to 20000, but epicsThreadStackBig is only 11000.
-    * are such large stack sizes really needed? */
-
-   /* spawn task to pvload initialisation data */
-   epicsThreadMustCreate("tloadInit", epicsThreadPriorityMedium, 
-                     epicsThreadGetStackSize(epicsThreadStackBig),
-                     (EPICSTHREADFUNC)loadInitFiles, (void *)NULL);
-
-   /* spawn control loop task */
-   epicsThreadMustCreate("tslowTx",epicsThreadPriorityMedium,
-                    epicsThreadGetStackSize(epicsThreadStackBig),
-                    (EPICSTHREADFUNC)slowTransmit, (void *)NULL);
-
-   /* Do in startup in order that xycom has already been initted.
-    * Then, if TIME_LATENCY needed, everything w.r.t. port addresses will
-    * have been defined */
-
-   epicsThreadMustCreate("tprocGuides", epicsThreadPriorityHigh,
-                    epicsThreadGetStackSize(epicsThreadStackBig),
-                    (EPICSTHREADFUNC)processGuides, (void *)NULL);
-
-#if 0
-/* convert this to a thread that runs periodically */
-   /* set up aux clock to and connect ISR */
-   sysAuxClkRateSet (SYSTEM_CLOCK_RATE);
-   sysAuxClkConnect ((FUNCPTR) fireLoops, 0);
-   sysAuxClkEnable ();
-#endif
+   /* 
+    * The vxWorks code had stacksize for all threads set to 20000,
+    * but epicsThreadStackBig is only 11000.
+    * 
+    * Are such large stack sizes really needed?
+    *
+    * TODO: Matt, Mike, Ignacio check...
+    */
    
-   epicsThreadMustCreate("tfireLoops", epicsThreadPriorityHigh,
-                   epicsThreadGetStackSize(epicsThreadStackSmall),
-                   (EPICSTHREADFUNC)fireLoops, (void *)NULL);
-
-
    refMemFree = epicsMutexMustCreate();
    eventDataSem = epicsMutexMustCreate();
    m2MemFree = epicsMutexMustCreate();
@@ -204,12 +191,15 @@ int scsInit (void)
    guideUpdateNow = epicsEventMustCreate(epicsEventEmpty);
    diagnosticsAvailable = epicsEventMustCreate(epicsEventEmpty);
 
+   /* spawn task to pvload initialisation data */
+   epicsThreadMustCreate("tloadInit", epicsThreadPriorityLow, 
+                     epicsThreadGetStackSize(epicsThreadStackBig),
+                     (EPICSTHREADFUNC)loadInitFiles, (void *)NULL);
 
-
-/* These semaphores don't seem to be used anywhere  -- get rid of them. 20171019 MDW */
-   // compileStatus = epicsEventMustCreate(epicsEventEmpty);
-   // statusCompiled = epicsEventMustCreate(epicsEventEmpty);
-
+   /* spawn control loop task */
+   epicsThreadMustCreate("tslowTx",epicsThreadPriorityLow,
+                    epicsThreadGetStackSize(epicsThreadStackBig),
+                    (EPICSTHREADFUNC)slowTransmit, (void *)NULL);
 
    /* M2 simulation pointer always points to the buffer area */
    if ((m2Ptr = (memMap *) malloc (sizeof (memMap))) == NULL)
@@ -223,7 +213,6 @@ int scsInit (void)
       printf ("malloc fail on creation of scsPtr buffer\n");
       return (ERROR);
    }
-
 
    /* if no reflective memory card is present, create an equivalent buffer */
    if(rmStatus(0) != S_dev_NoInit) {
@@ -241,11 +230,9 @@ int scsInit (void)
       }
    }
 
-
    printf ("initRefMem, scsPtr = 0x%p, scsBase = 0x%p\n",  scsPtr, scsBase); 
 
    /* create command message queue */
-
    if ((commandQId = epicsMessageQueueCreate(100, sizeof (long))) == NULL)
    {
       errorLog ("initRefMem(): error in creation of commandQId message queue", 1, ON);
@@ -256,7 +243,6 @@ int scsInit (void)
    }
 
    /* create command receiving queue for the simulation */
-
    if ((receiveQId = epicsMessageQueueCreate(100, sizeof (long))) == NULL)
    {
       errorLog ("initRefMem():  error in creation of receiveQId message queue", 1, ON);
@@ -267,7 +253,6 @@ int scsInit (void)
    }
 
    /* create health message queue */
-
    if ((healthQId = epicsMessageQueueCreate(100, sizeof (healthReport))) == NULL)
    {
       errorLog ("initRefMem(): error in creation of healthiQId  message queue", 1, ON);
@@ -278,45 +263,57 @@ int scsInit (void)
    }
 
    /* clear buffers */
-
    epicsMutexLock(refMemFree);
    memset ((void *) scsPtr, 0, sizeof (memMap));
    epicsMutexUnlock(refMemFree);
-
+   mutex15++;
    epicsMutexLock(m2MemFree);
    memset ((void *) m2Ptr, 0, sizeof (memMap));
    epicsMutexUnlock(m2MemFree);
-
+   mutex16++;
    memset ((void *) scsBase, 0, sizeof (memMap));
+
+   /* Do in startup in order that xycom has already been inited.
+    * Then, if TIME_LATENCY needed, everything w.r.t. port addresses will
+    * have been defined */
+
+   epicsThreadMustCreate("tprocGuides", epicsThreadPriorityHigh,
+                    epicsThreadGetStackSize(epicsThreadStackBig),
+                    (EPICSTHREADFUNC)processGuides, (void *)NULL);
 
    /* spawn communication tasks */  
    /* these had been medium priority for GS */
-   epicsThreadMustCreate("tscsRx", epicsThreadPriorityHigh,
+   epicsThreadMustCreate("tscsRx", epicsThreadPriorityMedium,
                   epicsThreadGetStackSize(epicsThreadStackBig),
                   (EPICSTHREADFUNC)scsReceive, (void *)NULL);
 
-   epicsThreadMustCreate("ttiltRx", epicsThreadPriorityHigh,
+   /*
+    * Tilt Receive is a simulation thread.... MRIPPA
+   epicsThreadMustCreate("ttiltRx", epicsThreadPriorityMedium,
                   epicsThreadGetStackSize(epicsThreadStackBig),
                   (EPICSTHREADFUNC)tiltReceive, (void *)NULL);
+   */
 
-/*
-   if ((taskSpawn ("cemTimerS", 101, VX_FP_TASK, 20000, (FUNCPTR) cemTimerStart, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)) == ERROR)
-   {
-      printf ("taskSpawn fail - cemTimerS\n");
-      return (ERROR);
-   }
-
-   if ((taskSpawn ("cemTimerE", 101, VX_FP_TASK, 20000, (FUNCPTR) cemTimerEnd, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)) == ERROR)
-   {
-      printf ("taskSpawn fail - cemTimerE\n");
-      return (ERROR);
-   }
-*/
+   epicsThreadMustCreate("tfireLoops", epicsThreadPriorityLow,
+                   epicsThreadGetStackSize(epicsThreadStackSmall),
+                   (EPICSTHREADFUNC)fireLoops, (void *)NULL);
 
    return (OK);
-
 }
 
 
+static const iocshFuncDef scsInitFuncDef ={"scsInit", 0, NULL};
+static void scsInitCallFunc(const iocshArgBuf *args)
+{
+    scsInit();
+}
 
+static void scsRegisterCommands(void)
+{
+    iocshRegister(&scsInitFuncDef, scsInitCallFunc);
+}
 
+epicsExportRegistrar(scsRegisterCommands);
+/* epicsExportAddress(int, refmem_mon1);  */
+epicsExportAddress(int, mutex15);
+epicsExportAddress(int, mutex16);

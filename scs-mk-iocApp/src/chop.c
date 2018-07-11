@@ -42,17 +42,17 @@
 /* ===================================================================== */
 #include <stdio.h>
 #include <string.h>
+#include <epicsExport.h>
+#include <registryFunction.h>
 
 #include <cad.h>
 #include <tcslib.h>
 
 #include "utilities.h"      /* for all the EPICS base includes, plus other stuff */
 #include "chop.h"               
-#include "archive.h"        /* for cadDirLog, refMemFree */
+//#include "archive.h"        /* for cadDirLog, refMemFree */
+#include "m2Log.h"          /* cadDirLog*/
 #include "control.h"        /* For scsPtr, interlockFlag */
-
-
-
 
 /* Define frequency limits for the various chop profiles (Hertz)  */
 
@@ -287,11 +287,11 @@ long CADchopConfig (struct cadRecord * pcad)
        }
 
        /* write chop parameters to reflective memory */
-       epicsMutexLock(refMemFree);
+       /*epicsMutexLock(refMemFree);*/
        scsPtr->page0.chopFrequency = (float)frequency;
        scsPtr->page0.chopProfile   = (long)profile;
        scsPtr->page0.chopDutyCycle = (float)dutyCycle;
-       epicsMutexUnlock(refMemFree);
+       /*epicsMutexUnlock(refMemFree);*/
 
        /* flag that chop configuration has been changed */
        writeCommand(CHOP_CHANGE);
@@ -784,4 +784,10 @@ double  percentCalc (struct subRecord * psub)
 
    return(OK);
 }
+
+epicsRegisterFunction(CADchopConfig);
+epicsRegisterFunction(CADchopControl);
+epicsRegisterFunction(CADbeamJog);
+epicsRegisterFunction(calcEnvelope);
+epicsRegisterFunction(percentCalc);
 

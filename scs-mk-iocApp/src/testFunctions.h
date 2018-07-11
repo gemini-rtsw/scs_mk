@@ -66,6 +66,7 @@ void rawTime(void);
 
 void testMem(const memMap* buffPtr);
 void printPage0(const memMap* buffPtr);
+void printPage0Long(const memMap* buffPtr);
 void printPage1(const memMap* buffPtr);
 void printPage2(const memMap* buffPtr);
 void printPage7(const memMap* buffPtr);
@@ -76,10 +77,7 @@ void printPage11(const memMap* buffPtr);
 void printPage12(const memMap* buffPtr);
 void printPage13a(const memMap* buffPtr);
 void printPage13b(const memMap* buffPtr);
-
-#ifndef MK
 void printPage15(const memMap* buffPtr);
-#endif
 
 long initSelector(struct genSubRecord* pgsub);
 

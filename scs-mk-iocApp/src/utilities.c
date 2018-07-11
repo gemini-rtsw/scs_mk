@@ -52,6 +52,15 @@
 /* INDENT ON */
 /* ===================================================================== */
 
+#include <stdio.h>          /* For atoi */
+#include <stdlib.h>         /* For atoi */
+#include <string.h>
+#include <math.h>           /* For sin, cos */
+#include <time.h>           /* For date2secs */
+#include <timeLib.h>        /* For timeNow */
+#include <epicsExport.h>
+#include <registryFunction.h>
+
 #include "utilities.h"
 #include "chopControl.h"     /* For chopEventSem */
 #include "control.h"         /* For controller */
@@ -63,12 +72,6 @@
 #define _INCLUDED_SUBRECORD_H
 #include <subRecord.h>
 #endif
-#include <stdio.h>          /* For atoi */
-#include <stdlib.h>         /* For atoi */
-#include <string.h>
-#include <math.h>           /* For sin, cos */
-#include <time.h>           /* For date2secs */
-#include <timeLib.h>        /* For timeNow */
 
 #define SCSTOP "top = m2:"
 #define INSTTOP "I = m2:inst:"
@@ -91,7 +94,7 @@ frameChange *ag2m2[MAX_SOURCES];
 // SEM_ID doPvLoad = NULL;
 // SEM_ID pvLoadComplete = NULL;
 epicsEventId doPvLoad;
-epicsEventId pvLoadComplete;
+//epicsEventId pvLoadComplete;
 
 
 extern epicsMessageQueueId healthQId;
@@ -961,8 +964,6 @@ long readHealth(struct genSubRecord *pgsub)
     return(OK);
 }   
 
-
-
 /* why aren't these being loaded in the startup script? */
 int loadInitFiles(void*p)
 {
@@ -992,7 +993,8 @@ int loadInitFiles(void*p)
       else
          errlogPrintf("pvload instConfig.dat\n");
 
-      epicsEventSignal(pvLoadComplete);
+      //epicsEventSignal(pvLoadComplete);
+      loadComplete = 1;
     }
 }
 
@@ -1461,8 +1463,9 @@ int  modifyFrame
         
     /* access frame */
 
-    if(epicsMutexTryLock(f->access))
+    if(f->access)
     {
+        epicsMutexLock(f->access);
         /* update the structure */
 
         f->theta    = theta*DEGS2RADS;
@@ -1535,9 +1538,9 @@ int   showFrame (int source)
     f = ag2m2[source];
 
     /* access frame */
-
-    if(epicsMutexTryLock(f->access) == OK)
+    if(f->access)
     {
+        epicsMutexLock(f->access);
         /* copy the frame contents */
 
         grab = *f;
@@ -1563,7 +1566,6 @@ int   showFrame (int source)
     return (OK);
 }
 
-#ifdef MK
 double vtkscale = 1.0;
 
 int vtkControl (Vtk *vtk, double guideError) {
@@ -1723,8 +1725,6 @@ int myround_nearest10(int n) {
     return tmp; 
     
 }
-
-#endif
 
 /* ===================================================================== */
 /* INDENT OFF */
@@ -2083,3 +2083,17 @@ long    snlStateStringConvert (struct genSubRecord * pgsub)
 }
 
 /* ===================================================================== */
+epicsRegisterFunction(readHealthInit);
+epicsRegisterFunction(readHealth);
+epicsRegisterFunction(stateInit);
+epicsRegisterFunction(stateMonitor);
+epicsRegisterFunction(snlStateInit);
+epicsRegisterFunction(snlStateMonitor);
+epicsRegisterFunction(scsStateStringInit);
+epicsRegisterFunction(scsStateStringConvert);
+epicsRegisterFunction(snlStateStringInit);
+epicsRegisterFunction(snlStateStringConvert);
+epicsRegisterFunction(driveEvent);
+epicsExportAddress(int, debugLevel);
+
+

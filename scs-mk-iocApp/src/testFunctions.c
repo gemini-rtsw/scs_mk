@@ -56,7 +56,8 @@
 /* INDENT ON */
 /* ===================================================================== */
 
-#include "archive.h"        /* For refMemFree */
+#include "m2Log.h"          /* For cadDirLog */
+//#include "archive.h"        /* For refMemFree */
 #include "control.h"        /* For scsPtr, scsBase, m2Ptr, 
                                diagnosticsAvailable, controller,
                                currentBeam, raw, filtered */
@@ -69,6 +70,9 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <iocsh.h>
+#include <epicsExport.h>
+#include <registryFunction.h>
 #include <math.h>           /* for trig functions */
 #include <stdlib.h>         /* Used for rand */
 #include <tcslib.h>         /* for tcsDcString */
@@ -101,13 +105,11 @@ double RANDnorm () {
    return result;
 }
 
-#ifdef MK
 double vibfreq = 12.0;
 double vibamp = 1.0;
 double vibphase = 0.0;
 double guideSrate = 100.0;
-//int guideSimDelayTicks = 1; /* Delay (ms) = guideSimDelayTicks / (sysClkRateGet()==usually 200) */
-double guideSimDelay = 0.001; /* Delay (ms) */
+double guideSimDelay = 0.005; /* Delay ( 5 ms) */
 
 void zeroMat(double mat[][1]) {
     int r,c;
@@ -155,6 +157,7 @@ void vtkInit(Vtk *vtk) {
     vtk->frequency.currentValue = vtk->frequency.initialValue;
     vtkAngle = vtk->angle * PI/180.0;
     
+    printf("VTK angle is: %f\n", vtkAngle);
     vtk->Rotator[0][0] = cos(vtkAngle);
     vtk->Rotator[0][1] = -sin(vtkAngle);
     vtk->Rotator[1][0] = sin(vtkAngle);
@@ -168,6 +171,7 @@ void phasorInit (Phasor *p) {
     p->dt = 1.0/p->Fs;
 
     p->Theta = 2*PI* p->freq * p->dt;
+    printf("Phasor Theta is: %f\n", p->Theta);
     p->Rotator[0][0] = cos(p->Theta);
     p->Rotator[0][1] = -sin(p->Theta);
     p->Rotator[1][0] = sin(p->Theta);
@@ -341,7 +345,6 @@ double sinus(int n) {
     double t = (double)n/guideSrate; 
     return vibamp * cos(2*PI * vibfreq * t  ) ;
 }
-#endif
 
 
 /*bitFieldM2 statusWord;*/
@@ -382,6 +385,16 @@ void checkSafeBlock(int count)
 
   printf("calculate checksum for safe block\n");
   result = checkSum((void *)&safeBlock.NR, count);
+  printf(" for %d longs checksum = %ld = %lx\n", count, result, result);
+}
+
+/* ===================================================================== */
+void checkCommandBlock(int count)
+{
+  long result = 0;
+
+  printf("calculate checksum for command block\n");
+  result = checkSum((void *)&scsBase->page0.NS, count);
   printf(" for %d longs checksum = %ld = %lx\n", count, result, result);
 }
 
@@ -441,7 +454,6 @@ void    tiltState (const memMap *buffPtr)
     printf ("topEnd     Addr = %lx, Value = %ld\n", (long) &buffPtr->page1.topEnd, buffPtr->page1.topEnd);
     printf ("temperature    Addr = %lx, Value = %f\n", (long) &buffPtr->page1.enclosureTemp, buffPtr->page1.enclosureTemp);
 
-
 }
 
 /* ===================================================================== */
@@ -456,16 +468,32 @@ void    big (void)
     printf ("double        %d\n", sizeof (double));
     printf ("unsigned int  %d\n", sizeof (unsigned int));
     printf ("short int     %d\n", sizeof (short int));
+    printf ("Command Block %d\n", sizeof (commandBlock));
+    printf ("Command Block 0x%0x\n", sizeof (commandBlock));
 
     printf ("m2 status word at %lx\n", (long) &scsPtr->page1.statusWord.all);
 }
 
 /* ===================================================================== */
 
+void clearPage0 (void)
+{
+
+    epicsMutexLock(refMemFree); 
+    memset(&scsBase->page0, 0, sizeof(commandBlock));
+    epicsMutexUnlock(refMemFree);
+
+    /*Resests the local SCS and M2 heartbeats*/
+    setLocal(0);
+
+}
+
+/* ===================================================================== */
+
 void    showCounts (void)
 {
-    printf ("BASE NS = %ld, NR = %ld\n", scsBase->page0.NS, scsBase->page1.NR);
-    printf ("SCS NS = %ld, NR = %ld\n", scsPtr->page0.NS, scsPtr->page1.NR);
+    printf ("BASE SCS NS = %ld, NR = %ld\n", scsBase->page0.NS, scsBase->page1.NR);
+    printf ("SCS  Sim NS = %ld, NR = %ld\n", scsPtr->page0.NS, scsPtr->page1.NR);
     printf ("M2  NS = %ld, NR = %ld\n", m2Ptr->page0.NS, m2Ptr->page1.NR);
 }
 
@@ -508,10 +536,123 @@ void    testMem (const memMap * buffPtr)
     printPage12 (buffPtr);
     printPage13a (buffPtr);
     printPage13b (buffPtr);
-
-#ifndef MK
     printPage15  (buffPtr);
-#endif
+}
+
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+/*
+ *
+ * WriteMemory(page, offset, value)
+ */
+void writeMemory(int page, int offset, const char *value) {
+
+    size_t nsOffset = offsetof(commandBlock , NS);
+    size_t ccOffset = offsetof(commandBlock , commandCode);
+    size_t xTGOffset = offsetof(commandBlock , xTiltGuide);
+
+    printf("Offset of 'NS' ........ is %u\n", nsOffset );
+    printf("Offset of 'commandCode' is %u\n", ccOffset );
+    printf("Offset of 'xTiltGuide'  is %u\n", xTGOffset );
+
+    switch (page) {
+        case 0:
+            scsBase->page0.heartbeat = atol(value);
+            break;
+
+        case 1:
+            scsBase->page1.heartbeat = atol(value);
+            break;
+
+        case 3:
+            scsBase->page0.xTiltGuide = (float) atof(value);
+            break;
+
+        case 4:
+            scsBase->page0.commandCode = atol(value);
+            break;
+
+        default:
+            printf("Not allowed");
+    }
+}
+
+/*
+ * Export to iocsh wiht no args
+ * */
+void showMemory(int page) {
+
+    memMap *ptr;
+
+    if  (simLevel == 0)
+        ptr = scsBase;
+    else
+        ptr = m2Ptr;
+
+    errlogPrintf("Showing RM memory at %p", ptr);
+
+    switch (page) {
+        case 0:
+            printPage0(ptr);
+            break;
+
+        case 1:
+            printPage1(ptr);
+            break;
+
+        case 2:
+            printPage2(ptr);
+            break;
+
+        case 7:
+            printPage7(ptr);
+            break;
+
+        case 8:
+            printPage8(ptr);
+            break;
+
+        case 9:
+            printPage9(ptr);
+            break;
+
+        case 10:
+            printPage10(ptr);
+            break;
+
+        case 11:
+            printPage11(ptr);
+            break;
+
+        case 12:
+            printPage12(ptr);
+            break;
+
+        case 13:
+            printPage13a(ptr);
+            break;
+
+        case 14:
+            printPage13b(ptr);
+            break;
+
+        case 15:
+            printPage15(ptr);
+            break;
+
+        case 666:
+            printPage0Long(ptr);
+            break;
+
+        case -1:
+            testMem(ptr);
+            break;
+
+        default:
+            errlogPrintf("RM Page not configured.\n  Try <0-3, or 7-15>\n");
+    }
 
 }
 
@@ -581,6 +722,7 @@ void    printPage0 (const memMap * buffPtr)
     printf ("xy_motor       Addr = %lx, Value = %ld\n", (long) &buffPtr->page0.xy_motor, buffPtr->page0.xy_motor);
     printf ("xydir          Addr = %lx, Value = %ld\n", (long) &buffPtr->page0.xydir, buffPtr->page0.xydir);
     printf ("xysteps        Addr = %lx, Value = %ld\n", (long) &buffPtr->page0.xysteps, buffPtr->page0.xysteps);
+    printf ("xyPositionDeadband Addr = %lx, Value = %f\n", (long) &buffPtr->page0.xyPositionDeadband, buffPtr->page0.xyPositionDeadband);
     printf ("zfocus         Addr = %lx, Value = %f\n", (long) &buffPtr->page0.zFocus, buffPtr->page0.zFocus);
     printf ("zguide         Addr = %lx, Value = %f\n", (long) &buffPtr->page0.zGuide, buffPtr->page0.zGuide);
     printf ("rawxguide      Addr = %lx, Value = %f\n", (long) &buffPtr->page0.rawXGuide, buffPtr->page0.rawXGuide);
@@ -588,8 +730,82 @@ void    printPage0 (const memMap * buffPtr)
     printf ("rawzguide      Addr = %lx, Value = %f\n", (long) &buffPtr->page0.rawZGuide, buffPtr->page0.rawZGuide);
     printf ("xGrossTiltDmd  Addr = %lx, Value = %f\n", (long) &buffPtr->page0.xGrossTiltDmd, buffPtr->page0.xGrossTiltDmd);
     printf ("yGrossTiltDmd  Addr = %lx, Value = %f\n", (long) &buffPtr->page0.yGrossTiltDmd, buffPtr->page0.yGrossTiltDmd);
-    printf ("xyPositionDeadband Addr = %lx, Value = %f\n", (long) &buffPtr->page0.xyPositionDeadband, buffPtr->page0.xyPositionDeadband);
+}
 
+/* ===================================================================== */
+
+void    printPage0Long (const memMap * buffPtr)
+{
+    printf ("\nPage 0 - SCS to M2 commands Values as Longs\n");
+
+    printf ("checksum        ; %lx ; %ld\n", (long) &buffPtr->page0.checksum, (long) buffPtr->page0.checksum);
+    printf ("NS              ; %lx ; %ld\n", (long) &buffPtr->page0.NS, (long) buffPtr->page0.NS);
+    printf ("command         ; %lx ; %ld\n", (long) &buffPtr->page0.commandCode, (long) buffPtr->page0.commandCode);
+    printf ("xtiltguide      ; %lx ; %ld\n", (long) &buffPtr->page0.xTiltGuide, (long) buffPtr->page0.xTiltGuide);
+    printf ("ytiltguide      ; %lx ; %ld\n", (long) &buffPtr->page0.yTiltGuide, (long) buffPtr->page0.yTiltGuide);
+    printf ("zfocusguide     ; %lx ; %ld\n", (long) &buffPtr->page0.zFocusGuide, (long) buffPtr->page0.zFocusGuide);
+    printf ("axtilt          ; %lx ; %ld\n", (long) &buffPtr->page0.AxTilt, (long) buffPtr->page0.AxTilt);
+    printf ("aytilt          ; %lx ; %ld\n", (long) &buffPtr->page0.AyTilt, (long) buffPtr->page0.AyTilt);
+    printf ("bxtilt          ; %lx ; %ld\n", (long) &buffPtr->page0.BxTilt, (long) buffPtr->page0.BxTilt);
+    printf ("bytilt          ; %lx ; %ld\n", (long) &buffPtr->page0.ByTilt, (long) buffPtr->page0.ByTilt);
+    printf ("cxtilt          ; %lx ; %ld\n", (long) &buffPtr->page0.CxTilt, (long) buffPtr->page0.CxTilt);
+    printf ("cytilt          ; %lx ; %ld\n", (long) &buffPtr->page0.CyTilt, (long) buffPtr->page0.CyTilt);
+    printf ("actuator1       ; %lx ; %ld\n", (long) &buffPtr->page0.actuator1, (long) buffPtr->page0.actuator1);
+    printf ("actuator2       ; %lx ; %ld\n", (long) &buffPtr->page0.actuator2, (long) buffPtr->page0.actuator2);
+    printf ("actuator3       ; %lx ; %ld\n", (long) &buffPtr->page0.actuator3, (long) buffPtr->page0.actuator3);
+    printf ("heartbeat       ; %lx ; %ld\n", (long) &buffPtr->page0.heartbeat, (long) buffPtr->page0.heartbeat);
+    printf ("xDemand         ; %lx ; %ld\n", (long) &buffPtr->page0.xDemand, (long) buffPtr->page0.xDemand);
+    printf ("yDemand         ; %lx ; %ld\n", (long) &buffPtr->page0.yDemand, (long) buffPtr->page0.yDemand);
+    printf ("central         ; %lx ; %ld\n", (long) &buffPtr->page0.centralBaffle, (long) buffPtr->page0.centralBaffle);
+    printf ("deployable      ; %lx ; %ld\n", (long) &buffPtr->page0.deployBaffle, (long) buffPtr->page0.deployBaffle);
+    printf ("profile         ; %lx ; %ld\n", (long) &buffPtr->page0.chopProfile, (long) buffPtr->page0.chopProfile);
+    printf ("frequency       ; %lx ; %ld\n", (long) &buffPtr->page0.chopFrequency, (long) buffPtr->page0.chopFrequency);
+    printf ("dutycycle       ; %lx ; %ld\n", (long) &buffPtr->page0.chopDutyCycle, (long) buffPtr->page0.chopDutyCycle);
+    printf ("xtilttol        ; %lx ; %ld\n", (long) &buffPtr->page0.xTiltTolerance, (long) buffPtr->page0.xTiltTolerance);
+    printf ("ytilttol        ; %lx ; %ld\n", (long) &buffPtr->page0.yTiltTolerance, (long) buffPtr->page0.yTiltTolerance);
+    printf ("zfocustol       ; %lx ; %ld\n", (long) &buffPtr->page0.zFocusTolerance, (long) buffPtr->page0.zFocusTolerance);
+    printf ("xpostol         ; %lx ; %ld\n", (long) &buffPtr->page0.xPositionTolerance, (long) buffPtr->page0.xPositionTolerance);
+    printf ("ypostol         ; %lx ; %ld\n", (long) &buffPtr->page0.yPositionTolerance, (long) buffPtr->page0.yPositionTolerance);
+    printf ("bandwidth       ; %lx ; %ld\n", (long) &buffPtr->page0.bandwidth, (long) buffPtr->page0.bandwidth);
+    printf ("xtiltgain       ; %lx ; %ld\n", (long) &buffPtr->page0.xTiltGain, (long) buffPtr->page0.xTiltGain);
+    printf ("ytiltgain       ; %lx ; %ld\n", (long) &buffPtr->page0.yTiltGain, (long) buffPtr->page0.yTiltGain);
+    printf ("zfocusgain      ; %lx ; %ld\n", (long) &buffPtr->page0.zFocusGain, (long) buffPtr->page0.zFocusGain);
+    printf ("xtiltshift      ; %lx ; %ld\n", (long) &buffPtr->page0.xTiltShift, (long) buffPtr->page0.xTiltShift);
+    printf ("ytiltshift      ; %lx ; %ld\n", (long) &buffPtr->page0.yTiltShift, (long) buffPtr->page0.yTiltShift);
+    printf ("zfocusshift     ; %lx ; %ld\n", (long) &buffPtr->page0.zFocusShift, (long) buffPtr->page0.zFocusShift);
+    printf ("xtiltsmooth     ; %lx ; %ld\n", (long) &buffPtr->page0.xTiltSmooth, (long) buffPtr->page0.xTiltSmooth);
+    printf ("ytiltsmooth     ; %lx ; %ld\n", (long) &buffPtr->page0.yTiltSmooth, (long) buffPtr->page0.yTiltSmooth);
+    printf ("zfocussmooth    ; %lx ; %ld\n", (long) &buffPtr->page0.zFocusSmooth, (long) buffPtr->page0.zFocusSmooth);
+    printf ("xtcsminrange    ; %lx ; %ld\n", (long) &buffPtr->page0.xTcsMinRange, (long) buffPtr->page0.xTcsMinRange);
+    printf ("ytcsminrange    ; %lx ; %ld\n", (long) &buffPtr->page0.yTcsMinRange, (long) buffPtr->page0.yTcsMinRange);
+    printf ("xtcsmaxrange    ; %lx ; %ld\n", (long) &buffPtr->page0.xTcsMaxRange, (long) buffPtr->page0.xTcsMaxRange);
+    printf ("ytcsmaxrange    ; %lx ; %ld\n", (long) &buffPtr->page0.yTcsMaxRange, (long) buffPtr->page0.yTcsMaxRange);
+    printf ("xpminrange      ; %lx ; %ld\n", (long) &buffPtr->page0.xPMinRange, (long) buffPtr->page0.xPMinRange);
+    printf ("ypminrange      ; %lx ; %ld\n", (long) &buffPtr->page0.yPMinRange, (long) buffPtr->page0.yPMinRange);
+    printf ("xpmaxrange      ; %lx ; %ld\n", (long) &buffPtr->page0.xPMaxRange, (long) buffPtr->page0.xPMaxRange);
+    printf ("ypmaxrange      ; %lx ; %ld\n", (long) &buffPtr->page0.yPMaxRange, (long) buffPtr->page0.yPMaxRange);
+    printf ("follower        ; %lx ; %ld\n", (long) &buffPtr->page0.follower, (long) buffPtr->page0.follower);
+    printf ("foldir          ; %lx ; %ld\n", (long) &buffPtr->page0.foldir, (long) buffPtr->page0.foldir);
+    printf ("followersteps   ; %lx ; %ld\n", (long) &buffPtr->page0.followersteps, (long) buffPtr->page0.followersteps);
+    printf ("offloader       ; %lx ; %ld\n", (long) &buffPtr->page0.offloader, (long) buffPtr->page0.offloader);
+    printf ("ofldir          ; %lx ; %ld\n", (long) &buffPtr->page0.ofldir, (long) buffPtr->page0.ofldir);
+    printf ("offloadersteps  ; %lx ; %ld\n", (long) &buffPtr->page0.offloadersteps, (long) buffPtr->page0.offloadersteps);
+    printf ("cbafdir         ; %lx ; %ld\n", (long) &buffPtr->page0.cbafdir, (long) buffPtr->page0.cbafdir);
+    printf ("cbsteps         ; %lx ; %ld\n", (long) &buffPtr->page0.cbsteps, (long) buffPtr->page0.cbsteps);
+    printf ("deployable_baffle       ; %lx ; %ld\n", (long) &buffPtr->page0.deployable_baffle, (long) buffPtr->page0.deployable_baffle);
+    printf ("dbafdir         ; %lx ; %ld\n", (long) &buffPtr->page0.dbafdir, (long) buffPtr->page0.dbafdir);
+    printf ("dbsteps         ; %lx ; %ld\n", (long) &buffPtr->page0.dbsteps, (long) buffPtr->page0.dbsteps);
+    printf ("xy_motor        ; %lx ; %ld\n", (long) &buffPtr->page0.xy_motor, (long) buffPtr->page0.xy_motor);
+    printf ("xydir           ; %lx ; %ld\n", (long) &buffPtr->page0.xydir, (long) buffPtr->page0.xydir);
+    printf ("xysteps         ; %lx ; %ld\n", (long) &buffPtr->page0.xysteps, (long) buffPtr->page0.xysteps);
+    printf ("xyPositionDeadband  ; %lx ; %ld\n", (long) &buffPtr->page0.xyPositionDeadband, (long) buffPtr->page0.xyPositionDeadband);
+    printf ("zfocus          ; %lx ; %ld\n", (long) &buffPtr->page0.zFocus, (long) buffPtr->page0.zFocus);
+    printf ("zguide          ; %lx ; %ld\n", (long) &buffPtr->page0.zGuide, (long) buffPtr->page0.zGuide);
+    printf ("rawxguide       ; %lx ; %ld\n", (long) &buffPtr->page0.rawXGuide, (long) buffPtr->page0.rawXGuide);
+    printf ("rawyguide       ; %lx ; %ld\n", (long) &buffPtr->page0.rawYGuide, (long) buffPtr->page0.rawYGuide);
+    printf ("rawzguide       ; %lx ; %ld\n", (long) &buffPtr->page0.rawZGuide, (long) buffPtr->page0.rawZGuide);
+    printf ("xGrossTiltDmd   ; %lx ; %ld\n", (long) &buffPtr->page0.xGrossTiltDmd, (long) buffPtr->page0.xGrossTiltDmd);
+    printf ("yGrossTiltDmd   ; %lx ; %ld\n", (long) &buffPtr->page0.yGrossTiltDmd, (long) buffPtr->page0.yGrossTiltDmd);
 }
 
 /* ===================================================================== */
@@ -859,7 +1075,6 @@ void    printPage13b (const memMap * buffPtr)
 }
 
 
-#ifndef MK
 /* ===================================================================== */
 
 void    printPage15 (const memMap * buffPtr)
@@ -876,7 +1091,6 @@ void    printPage15 (const memMap * buffPtr)
     printf ("interval   Addr = %lx, Value = %f\n", (long) &buffPtr->gpi.interval, buffPtr->gpi.interval);
     printf ("time       Addr = %lx, Value = %f\n", (long) &buffPtr->gpi.time, buffPtr->gpi.time);
 }
-#endif
 
 /* ===================================================================== */
 /* INDENT OFF */
@@ -1085,13 +1299,8 @@ void fillWfs(void *p)
 {
    double value = 0.0; 
 
-#ifndef MK
-   double smallRand;
-#endif
-
    for (;;) {
 
-#ifdef MK
 /*
       scsBase->pwfs2.z1 = xTiltGuideSimScale * phasor.command;
       scsBase->pwfs2.z2 = yTiltGuideSimScale * phasor.command;
@@ -1101,19 +1310,6 @@ void fillWfs(void *p)
       scsBase->pwfs2.err3 = phasor.command * 0.2;
 */
       scsBase->pwfs2.z3 = 0.0;
-#else
-      smallRand = RANDnorm();
-
-      scsBase->pwfs2.z1 = xTiltGuideSimScale * (smallRand + 0.1);
-      scsBase->pwfs2.z2 = yTiltGuideSimScale * (smallRand + 0.1);
-      scsBase->pwfs2.z3 = 0.0;
-      scsBase->pwfs2.err1 = smallRand * 0.2;
-      scsBase->pwfs2.err2 = smallRand * 0.2;
-      scsBase->pwfs2.err3 = smallRand * 0.2;
-      scsBase->pwfs2.time = value++;
-      scsBase->pwfs2.interval += (float)(gInterval);
-#endif
-
       scsBase->pwfs2.time = value++;
       scsBase->pwfs2.interval += (float)(gInterval);
 
@@ -1123,7 +1319,6 @@ void fillWfs(void *p)
       if (freeRunGuideSim)
          rmISR3(3);
          
-#ifdef MK
       /* guideSimDelayTicks could be set to match the intended 100Hz 
        * sample frequency seen by M2TS (CEM). This normally depends
        * on the incomming WFS interrupt rate, then cut in half
@@ -1135,9 +1330,6 @@ void fillWfs(void *p)
        *    guideSimDelayTicks = 2; ==> 10ms delay
        * */
       epicsThreadSleep(guideSimDelay);
-#else
-      epicsThreadSleep(0.001);  /* wait only one clock tick */
-#endif
    }
 
    /* thread is deletped when it terminates */
@@ -1308,14 +1500,14 @@ long CADfreeRun(struct cadRecord *pcad) {
  */
 long guideSimProc (struct genSubRecord * pgsub) {
 
-   static int myguideSim;
+   static long myguideSim;
    static long mytest;
    static double myXscale, myYscale;
 
    myguideSim = *(long *) pgsub->a;
    mytest = *(long *) pgsub->a;
 
-   printf("Turn guide sim %d\n", myguideSim);
+   printf("Turn guide sim %ld\n", myguideSim);
    printf("Turn guide sim test %ld\n", mytest);
 
    if (myguideSim) {  /* Request to turn guide sim on*/
@@ -1540,4 +1732,116 @@ void testtcs2m2(double xp, double yp)
            m2Position.xPosNew, m2Position.yPosNew); 
 }
 
+/****StartGuideSim******/
+static const iocshFuncDef startGuideSimFuncDef ={"startGuideSim", 0, NULL};
+static void startGuideSimCallFunc(const iocshArgBuf *args)
+{
+    startGuideSim();
+}
 
+/****EndGuideSim******/
+static const iocshFuncDef endGuideSimFuncDef ={"endGuideSim", 0, NULL};
+static void endGuideSimCallFunc(const iocshArgBuf *args)
+{
+    endGuideSim();
+}
+
+/****StartFreeRun******/
+static const iocshFuncDef startfreeRunFuncDef ={"startfreeRun", 0, NULL};
+static void startfreeRunCallFunc(const iocshArgBuf *args)
+{
+    startfreeRun();
+}
+
+/****EndFreeRun******/
+static const iocshFuncDef endfreeRunFuncDef ={"endfreeRun", 0, NULL};
+static void endfreeRunCallFunc(const iocshArgBuf *args)
+{
+    endfreeRun();
+}
+/****Big****/
+static const iocshFuncDef bigFuncDef ={"scsBig", 0, NULL};
+static void bigCallFunc(const iocshArgBuf *args)
+{
+    big();
+}
+
+/****clearPage0****/
+static const iocshFuncDef clearPage0FuncDef ={"scsClearPage0", 0, NULL};
+static void clearPage0CallFunc(const iocshArgBuf *args)
+{
+    clearPage0();
+}
+
+/****showCounts****/
+static const iocshFuncDef showCountsFuncDef ={"scsShowCounts", 0, NULL};
+static void showCountsCallFunc(const iocshArgBuf *args)
+{
+    showCounts();
+}
+
+/****ShowMemory******/
+static const iocshArg smArg0 = {"page in rm <1-13>", iocshArgInt };
+static const iocshArg *smArgs[] = {&smArg0};
+
+static const iocshFuncDef showMemoryFuncDef ={"showMemory", 1, smArgs};
+static void showMemoryCallFunc(const iocshArgBuf *args)
+{
+    showMemory(args[0].ival);
+}
+
+/***WriteMemory***/
+static const iocshArg wmArg0 = {"page in rm <1-13>", iocshArgInt };
+static const iocshArg wmArg1 = {"<offset_in_page>", iocshArgInt };
+static const iocshArg wmArg2 = {"<string_value>", iocshArgString };
+static const iocshArg *wmArgs[] = {&wmArg0, &wmArg1, &wmArg2};
+
+static const iocshFuncDef writeMemoryFuncDef ={"writeMemory", 3, wmArgs};
+static void writeMemoryCallFunc(const iocshArgBuf *args)
+{
+    writeMemory(args[0].ival, args[1].ival, args[2].sval);
+}
+
+/***CheckSafeBlock***/
+static const iocshArg csbArg0 = {"<N>, Sum N vals of Safe block", iocshArgInt };
+static const iocshArg *csbArgs[] = {&csbArg0};
+
+static const iocshFuncDef checkSafeBlockFuncDef ={"checkSafeBlock", 1, csbArgs};
+static void checkSafeBlockCallFunc(const iocshArgBuf *args)
+{
+    checkSafeBlock(args[0].ival);
+}
+
+/***CheckSafeBlock***/
+static const iocshArg ccbArg0 = {"<N>, Sum N vals of Command block", iocshArgInt };
+static const iocshArg *cbbArgs[] = {&ccbArg0};
+
+static const iocshFuncDef checkCommandBlockFuncDef ={"checkCommandBlock", 1, cbbArgs};
+static void checkCommandBlockCallFunc(const iocshArgBuf *args)
+{
+    checkCommandBlock(args[0].ival);
+}
+
+static void testFunctionsRegisterCommands(void)
+{
+    iocshRegister(&checkSafeBlockFuncDef, checkSafeBlockCallFunc);
+    iocshRegister(&checkCommandBlockFuncDef, checkCommandBlockCallFunc);
+    iocshRegister(&showMemoryFuncDef, showMemoryCallFunc);
+    iocshRegister(&writeMemoryFuncDef, writeMemoryCallFunc);
+    iocshRegister(&startGuideSimFuncDef, startGuideSimCallFunc);
+    iocshRegister(&endGuideSimFuncDef, endGuideSimCallFunc);
+    iocshRegister(&startfreeRunFuncDef, startfreeRunCallFunc);
+    iocshRegister(&endfreeRunFuncDef, endfreeRunCallFunc);
+    iocshRegister(&bigFuncDef, bigCallFunc);
+    iocshRegister(&clearPage0FuncDef, clearPage0CallFunc);
+    iocshRegister(&showCountsFuncDef, showCountsCallFunc);
+}
+
+epicsExportRegistrar(testFunctionsRegisterCommands);
+epicsRegisterFunction(initSelector);
+epicsRegisterFunction(selector);
+epicsRegisterFunction(guideSimProc);
+
+epicsRegisterFunction(pulseSteerCAD);
+epicsRegisterFunction(CADfreeRun);
+epicsRegisterFunction(CADguideSimCont);

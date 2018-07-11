@@ -2,15 +2,86 @@ $(LINUX_ONLY)#!${INSTALL}/bin/${ARCH}/scs-mk-ioc
 
 cd ${INSTALL}
 
+epicsEnvSet "IOCSH_PS1" "scs-mk-ioc>"
+
+bspExtVerbosity=0
 ## Register all support components
 dbLoadDatabase("dbd/scs-mk-ioc.dbd")
 scs_mk_ioc_registerRecordDeviceDriver(pdbbase)
 
 ## Load record instances
-#dbLoadTemplate("db/scs-mk-ioc.substitutions")
-#dbLoadRecords("db/scs-mk-ioc.db", "user=mikew")
+dbLoadRecords("db/m2.db")
+dbLoadRecords("db/m2sad.db")
+dbLoadRecords("db/iocAdminRTEMS.db"," IOC=m2:iocStats,TODFORMAT=%m/%d/%Y %H:%M:%S")
+dbLoadRecords("db/timeProbe.db","top=m2:")
 
+# Configure BANCOMM card
+# - set the bc635 Time Provider priority to something other than the default
+# or set it to a negative value to disable the bc635 Time Provider
+# Must be called before BCconfigure
+bc635TimeSetTpPrio (60)
+
+#Set the Bancomm master in RTC ("A3") Mode
+#bcUseRTCMode()
+
+# - Master ? Simulate ? intPerSecond, intPerTick, timeOffset (microsec)
+BCconfigure (0, 0, 200, 1, 0)
+
+# initialise the xycom 240
+drvXy240Config(1, 32, 0xd000)
+#drvXy240ConfigOutputInit(1, 32, 0xd000, 0x0000, 0x0003)
+
+# initialise reflective memory
+drvVmi5588Config(0xA00000, 0x040000, 0xb0, 0x06)
+
+# initialise system, first xycom (via chopInit), then then rest.
+# Note: scsInit spawns processGuides which writes to the xycom if compiled
+# with the USR C FLAG for TIME_LATENCY, so chopInit goes first.
+chopInit
+scsInit
+
+## Run this to trace the stages of iocInit
+#traceIocInit
+
+#Start EPICS
 iocInit
 
-## Start any sequence programs
-#seq(sncxxx, "user=mikew")
+# set debug level for test debugging
+#
+# TODO: Rippa confirm if these are obsolete, then remove
+#debugLevel = 0
+#loggingEnable = 1
+#CADlogging = 1
+
+#startGuideSim
+dbpf "m2:interlockOverride","1"
+
+##M2TS TTL SERVO ON Card0, PORT7, Bit 1, HIGH #####
+#xy240_writePortBit (0,7,1,1)
+
+##M2TS CEM POWER ON Card0, PORT7, Bit 0, HIGH #####
+#xy240_writePortBit (0,7,0,1)
+
+#dbpf "m2:guideConfigReset.DIR","0"
+###### Start any sequence programs
+#seq &timeSeq, "sys=m2:, top=tc1:"
+#seq &scs_mon "T=m2:, D=m2:"
+#seq &tilt_st, "S=m2:tilt:, debug=0"
+#seq &scs_st, "T=m2:, D=m2:, F=m2:, I=m2:inst:"
+###dbpr "m2:interlock"
+##### Comment out during testing signal from GIS:
+####
+#dbpf "m2:guideConfigReset.DIR","3"
+#####taskDelay(200)
+####dbpf "m2:guideConfigReset.DIR","3"
+####
+####dbpf "m2:byte3:b6","OFF"
+####dbpf "m2:byte3:b7","OFF"
+####dbpf "m2:byte0:b7","OFF"
+####dbpf "m2:byte1:b0","OFF"
+####dbpf "m2:byte1:b4","NO"
+####dbpf "m2:byte0:b6","DISABLED"
+####dbpf "m2:byte0:b2","DISABLED"
+dbpf "m2:byte0:b3","0"
+####
+

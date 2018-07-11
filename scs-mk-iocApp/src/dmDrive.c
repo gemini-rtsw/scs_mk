@@ -43,7 +43,10 @@
 /* INDENT ON */
 /* ===================================================================== */
 #include <timeLib.h>        /* For timeNow */
-#include "archive.h"        /* For refMemFree */
+#include <epicsExport.h>
+#include <registryFunction.h>
+
+//#include "archive.h"        /* For refMemFree */
 #include "chop.h"           /* For chopIsOn, getSyncMask */
 #include "control.h"        /* For simLevel, scsPtr, scsBase, m2Ptr, 
                                        m2MemFree */
@@ -113,11 +116,14 @@
 
 /* INDENT ON */
 /* ===================================================================== */
+static int reallock1 = 0;
+static int reallock2 = 0;
 long    realDrive (struct genSubRecord * pgsub)
 {
 
     /* note sense reversal for in position, on ref mem 0 = in position */
-
+  if (refMemFree ) {
+    reallock1++;
     epicsMutexLock(refMemFree);
 
     *(long *) pgsub->vala   = scsPtr->page1.checksum;
@@ -131,9 +137,9 @@ long    realDrive (struct genSubRecord * pgsub)
     *(long *) pgsub->vali   = scsPtr->page1.inPosition;
 
     if (scsPtr->page1.chopTransition)
-       *(long *) pgsub->valj   = 0;
-    else
-       *(long *) pgsub->valj   = 1;
+        *(long *) pgsub->valj   = 0;
+     else
+        *(long *) pgsub->valj   = 1;
 
     *(long *) pgsub->valk   = (long) scsPtr->page1.statusWord.all;
     *(long *) pgsub->vall   = scsPtr->page1.heartbeat;
@@ -148,8 +154,11 @@ long    realDrive (struct genSubRecord * pgsub)
     *(long *) pgsub->valu   = scsPtr->page1.topEnd;
 
     epicsMutexUnlock(refMemFree);
-
-    return (OK);
+    reallock2++;
+  } else {
+    errorLog ("realDrive - couldn't obtain refMemFree mutex", 1, ON);    	
+  }
+  return (OK);
 }
 
 /* ===================================================================== */
@@ -195,15 +204,22 @@ long    realDrive (struct genSubRecord * pgsub)
 
 /* INDENT ON */
 /* ===================================================================== */
+static int reallock3 = 0;
+static int reallock4 = 0;
 
 long    real2Drive (struct genSubRecord * pgsub)
 {
 
-    epicsMutexLock(refMemFree);
-    *(double *) pgsub->vala = scsPtr->page1.upperBearingAngle;
-    *(double *) pgsub->valb = scsPtr->page1.lowerBearingAngle;
-    epicsMutexUnlock(refMemFree);
-
+    if (refMemFree ) {
+       reallock3++;
+       epicsMutexLock(refMemFree); 
+       *(double *) pgsub->vala = scsPtr->page1.upperBearingAngle;
+       *(double *) pgsub->valb = scsPtr->page1.lowerBearingAngle;
+       epicsMutexUnlock(refMemFree); 
+       reallock4++;
+    } else {
+       errorLog ("real2Drive - couldn't obtain refMemFree mutex", 1, ON);    	
+    }
     return (OK);
 }
 
@@ -270,10 +286,14 @@ long    real2Drive (struct genSubRecord * pgsub)
 /* INDENT ON */
 /* ===================================================================== */
 
+static int  mutex9  = 0;
+static int  mutex10 = 0;
 long    displayScs (struct genSubRecord * pgsub)
 {
     if(simLevel != 0)
     {
+      if (m2MemFree ) {
+        mutex9++;
         epicsMutexLock(m2MemFree);  
         *(double *) pgsub->vala = m2Ptr->page0.xTiltGuide;
         *(double *) pgsub->valb = m2Ptr->page0.yTiltGuide;
@@ -297,6 +317,10 @@ long    displayScs (struct genSubRecord * pgsub)
         *(double *) pgsub->valt = m2Ptr->page0.chopDutyCycle;
         *(long *) pgsub->valu = m2Ptr->page0.NS;
         epicsMutexUnlock(m2MemFree);
+	mutex10++;
+      } else {
+         errorLog ("displayScs - couldn't obtain m2MemFree mutex", 1, ON);    	
+      }
     }
     else
     {
@@ -385,6 +409,8 @@ long    displayScs (struct genSubRecord * pgsub)
 
 /* INDENT ON */
 /* ===================================================================== */
+static int  mutex11  = 0;
+static int  mutex12 = 0;
 
 long    displayScs2 (struct genSubRecord * pgsub)
 {
@@ -397,6 +423,8 @@ long    displayScs2 (struct genSubRecord * pgsub)
 
     if(simLevel != 0)
     {
+      if (m2MemFree ) {
+    	mutex11++;
 	epicsMutexLock(m2MemFree);  
 	*(double *) pgsub->vala = m2Ptr->page0.zFocus;
 	*(double *) pgsub->valb = m2Ptr->page0.zGuide; 
@@ -406,6 +434,10 @@ long    displayScs2 (struct genSubRecord * pgsub)
         *(double *) pgsub->valf = m2Ptr->page0.xGrossTiltDmd;
         *(double *) pgsub->valg = m2Ptr->page0.yGrossTiltDmd;
 	epicsMutexUnlock(m2MemFree);
+    	mutex12++;
+      } else {
+         errorLog ("displayScs2 - couldn't obtain m2MemFree mutex", 1, ON);    	
+      }
     }
     else
     {
@@ -429,11 +461,12 @@ long    displayScs2 (struct genSubRecord * pgsub)
     }
 
     /* Either way, simulating or not, put eventData values on display */
-    epicsMutexLock(eventDataSem);
+    if (eventDataSem ) {
+       epicsMutexLock(eventDataSem);
 
     /* event bus stuff */
-    *(long   *) pgsub->valh = eventData.inPosition;
-    *(long   *) pgsub->vali = eventData.currentBeam;
+       *(long   *) pgsub->valh = eventData.inPosition;
+       *(long   *) pgsub->vali = eventData.currentBeam;
             /*
             *(double *) pgsub->valj = eventData.xTilt;
             *(double *) pgsub->valk = eventData.yTilt;
@@ -442,7 +475,10 @@ long    displayScs2 (struct genSubRecord * pgsub)
             *(double *) pgsub->valn = eventData.yPosition;
             *(double *) pgsub->valo = eventData.time; 
 	    timeLogged = eventData.time;*/
-    epicsMutexUnlock(eventDataSem);
+       epicsMutexUnlock(eventDataSem);
+    } else {
+       errorLog ("displayScs2 - couldn't obtain eventDataSem mutex", 1, ON);    	
+    }
         
     *(long *) pgsub->valp = getSyncMask();
 
@@ -495,19 +531,37 @@ long    displayScs2 (struct genSubRecord * pgsub)
 long    statusDrive (struct genSubRecord * pgsub)
 {
 
-    epicsMutexLock(refMemFree);
+    if (refMemFree ) {
+      epicsMutexLock(refMemFree); 
 
-    /* read the m2 status word as bytes and put out to ports */
-    *(long *) pgsub->vala = (char) scsPtr->page1.statusWord.byte[3];
-    *(long *) pgsub->valb = (char) scsPtr->page1.statusWord.byte[2];
-    *(long *) pgsub->valc = (char) scsPtr->page1.statusWord.byte[1];
-    *(long *) pgsub->vald = (char) scsPtr->page1.statusWord.byte[0];
+      /* read the m2 status word as bytes and put out to ports */
+      *(long *) pgsub->vala = (char) scsPtr->page1.statusWord.byte[3];
+      *(long *) pgsub->valb = (char) scsPtr->page1.statusWord.byte[2];
+      *(long *) pgsub->valc = (char) scsPtr->page1.statusWord.byte[1];
+      *(long *) pgsub->vald = (char) scsPtr->page1.statusWord.byte[0];
 
-    /* read enclosure temperature */
-    *(double *) pgsub->vale = scsPtr->page1.enclosureTemp;
+      /* read enclosure temperature */
+      *(double *) pgsub->vale = scsPtr->page1.enclosureTemp;
 
-    epicsMutexUnlock(refMemFree);
+      epicsMutexUnlock(refMemFree); 
+    } else {
+       errorLog ("statusDrive - couldn't obtain refMemFree mutex", 1, ON);    	
+    }
 
     return (OK);
 }
 
+
+epicsRegisterFunction(realDrive);
+epicsRegisterFunction(real2Drive);
+epicsRegisterFunction(displayScs);
+epicsRegisterFunction(displayScs2);
+epicsRegisterFunction(statusDrive);
+epicsExportAddress(int, reallock1);
+epicsExportAddress(int, reallock2);
+epicsExportAddress(int, reallock3);
+epicsExportAddress(int, reallock4);
+epicsExportAddress(int, mutex9);
+epicsExportAddress(int, mutex10);
+epicsExportAddress(int, mutex11);
+epicsExportAddress(int, mutex12);

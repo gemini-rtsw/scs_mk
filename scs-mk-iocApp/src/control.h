@@ -49,11 +49,8 @@
 #define AGOI_NODE               4       /* Node 4 is the A&G OIWFS */   
 #define GAOS_NODE               5       /* Node 5 is the ALTAIR    */   
 
-#ifndef MK
 #define F2OI_NODE               8       /* Node 8 is the F2 OIWFS */   
 #define GPI_NODE                9       /* Node 9 is the GPI OIWFS */  
-#endif
-
 
 #define SYSTEM_CLOCK_RATE      200      /* Number of ticks per second */ 
 
@@ -214,7 +211,6 @@ typedef struct
     long            xydir;
     long            xysteps;
     float           xyPositionDeadband;
-    char            scsTime[16];
     float           zFocus;    /*not used by M2. for dm display purposes only*/
     float           zGuide;    /*not used by M2. for dm display purposes only*/
     float           rawXGuide; /*not used by M2. for dm display purposes only*/
@@ -222,7 +218,7 @@ typedef struct
     float           rawZGuide; /*not used by M2. for dm display purposes only*/
     float           xGrossTiltDmd; /*not used by M2. for dm display purposes only*/
     float           yGrossTiltDmd; /*not used by M2. for dm display purposes only*/
-    float           pad[184]; /* Was 188 before scsTime */
+    float           pad[188]; 
 }commandBlock;
 
 /* M2 to SCS status block */
@@ -406,11 +402,8 @@ typedef struct
     wfsBlock        gaos;       /* page11 */
     wfsBlock        gyro;       /* page12 */
     wfsBlock        altair;     /* page13 */
-#ifndef MK
     unusedBlock     page14;
     wfsBlock        gpi;        /* page15 */
-#endif
-
 }memMap;
 
 typedef struct                  /* data from m2 to log */
@@ -425,7 +418,6 @@ typedef struct                  /* data from m2 to log */
 } m2History;
 
 
-#ifdef MK
 #define HS_RECORD_LENGTH 4000
 
 typedef struct {
@@ -446,7 +438,6 @@ typedef struct {
     double vtkYPhase[HS_RECORD_LENGTH]; /*Set FTV<output> to numsamples*/
 
 } HighSpeed;
-#endif
 
 enum
 {
@@ -525,12 +516,13 @@ enum
     /* 47-58 reserved for xycom commands (defined in showEngineering.c */
     CMD_XYINIT=59,        /* 59 */
     XY_DEADBAND_CHANGE=60, /* 60 */
-    SCS_TIME_UPDATE=61          /* 61 */
+    //SCS_TIME_UPDATE=61          [> 61 <]
 };
 
 /* Global variables*/
 
 extern int simLevel;
+extern int refmem_mon1;
 extern memMap *scsPtr;
 extern memMap *scsBase;
 extern memMap *m2Ptr;
@@ -539,6 +531,7 @@ extern epicsMutexId m2MemFree;
 extern epicsMutexId wfsFree[MAX_SOURCES];
 extern epicsMutexId eventDataSem;
 extern epicsMutexId setPointFree;
+extern epicsMutexId refMemFree;
 
 extern epicsEventId xySem;
 extern epicsEventId slowUpdate;
@@ -562,9 +555,7 @@ extern int flip;
 extern int guideType;
 extern PID controller[MAX_AXES];
 
-#ifdef MK
 extern HighSpeed *highSpeedData;
-#endif
 
 /* not used extern wfs raw[MAX_SOURCES];*/
 extern wfs filtered[MAX_SOURCES];
@@ -581,7 +572,6 @@ extern long followOn;
 extern long tiltPidOn;
 extern long focusPidOn;
 
-#ifdef MK
 extern long vibrationXTrackOn;
 extern long vibrationYTrackOn;
 extern long phasorXApply;
@@ -597,7 +587,7 @@ void swxon(void);
 void swyon(void);
 void swxoff(void);
 void swyoff(void);
-#endif
+void setLocal(long);
 
 extern long servoOnStatus;
 

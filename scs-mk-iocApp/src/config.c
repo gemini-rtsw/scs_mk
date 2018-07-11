@@ -59,13 +59,15 @@
 #include <string.h>
 #include <stdio.h>
 #include <math.h>
-
+#include <epicsExport.h>
+#include <registryFunction.h>
 #include <cad.h>
 #include <tcslib.h>
 
 #include "config.h"
 #include "utilities.h"      /* For setPid, errorLog, debugLevel */
-#include "archive.h"        /* For cadDirLog, refMemFree */
+//#include "archive.h"        /* For cadDirLog, refMemFree */
+#include "m2Log.h"          /* For cadDirLog */
 #include "control.h"        /* For writeCommand, scsPtr, interlockFlag, 
                                        guideType */
 
@@ -802,7 +804,6 @@ long    CADcontroller (struct cadRecord * pcad)
     return (status);
 }
 
-#ifdef MK
 long    CADsetPhasorControl (struct cadRecord * pcad)
 {
     long    status = CAD_ACCEPT;
@@ -957,9 +958,6 @@ long    CADsetPhasorControl (struct cadRecord * pcad)
 
 } 
 
-#endif
-
-#ifdef MK
 long    CADsetVTKControl (struct cadRecord * pcad)
 {
     long    status = CAD_ACCEPT;
@@ -1199,7 +1197,6 @@ long    CADsetVTKControl (struct cadRecord * pcad)
     return(status);
 
 } 
-#endif
 
 /* ===================================================================== */
 /*
@@ -2602,11 +2599,7 @@ long CADfocusPidControl (struct cadRecord * pcad)
 
 
 
-#ifdef MK
 /*
- *
- *
- *
  *
  */
 long CADphasorControl (struct cadRecord * pcad)
@@ -2725,14 +2718,7 @@ long CADphasorControl (struct cadRecord * pcad)
 }
 
 
-
-
-
 /* 
- *
- *
- *
- *
  *
  *
  *
@@ -2857,9 +2843,6 @@ long CADvtkControl (struct cadRecord * pcad)
     return (status);
 }
 
-#endif
-
-
 
 /* ===================================================================== */
 /*
@@ -2972,3 +2955,24 @@ long    CADmovePeriscope (struct cadRecord * pcad)
 
     return (status);
 }
+
+
+epicsRegisterFunction(CADmoveBaffle);
+epicsRegisterFunction(CADservoBandwidth);
+epicsRegisterFunction(dummyInit);
+epicsRegisterFunction(CADcontroller);
+epicsRegisterFunction(CADsetPhasorControl);
+epicsRegisterFunction(CADsetVTKControl);
+epicsRegisterFunction(CADdecsAdjust);
+epicsRegisterFunction(CADtolerance);
+epicsRegisterFunction(CADdebug);
+epicsRegisterFunction(CADdriveFollower);
+epicsRegisterFunction(CADdriveOffloader);
+epicsRegisterFunction(CADdriveDB);
+epicsRegisterFunction(CADdriveCB);
+epicsRegisterFunction(CADdriveXY);
+epicsRegisterFunction(CADtiltPidControl);
+epicsRegisterFunction(CADfocusPidControl);
+epicsRegisterFunction(CADphasorControl);
+epicsRegisterFunction(CADvtkControl);
+epicsRegisterFunction(CADmovePeriscope);
