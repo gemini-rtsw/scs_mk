@@ -3,6 +3,7 @@ $(LINUX_ONLY)#!${INSTALL}/bin/${ARCH}/scs-mk-ioc
 cd ${INSTALL}
 
 epicsEnvSet "IOCSH_PS1" "scs-mk-ioc>"
+epicsEnvSet "EPICS_CA_ADDR_LIST" "10.1.2.172"
 
 bspExtVerbosity=0
 ## Register all support components
@@ -28,8 +29,8 @@ bc635TimeSetTpPrio (60)
 BCconfigure (0, 0, 200, 1, 0)
 
 # initialise the xycom 240
-drvXy240Config(1, 32, 0xd000)
-#drvXy240ConfigOutputInit(1, 32, 0xd000, 0x0000, 0x0003)
+#drvXy240Config(1, 32, 0xd000)
+drvXy240ConfigOutputInit(1, 32, 0xd000, 0x0000, 0x0003)
 
 # initialise reflective memory
 drvVmi5588Config(0xA00000, 0x040000, 0xb0, 0x06)
@@ -64,16 +65,19 @@ dbpf "m2:interlockOverride","1"
 
 #dbpf "m2:guideConfigReset.DIR","0"
 ###### Start any sequence programs
-#seq &timeSeq, "sys=m2:, top=tc1:"
+seq &timeSeq, "sys=m2:, top=tc1:"
 #seq &scs_mon "T=m2:, D=m2:"
-#seq &tilt_st, "S=m2:tilt:, debug=0"
-#seq &scs_st, "T=m2:, D=m2:, F=m2:, I=m2:inst:"
+seq &tilt_st, "S=m2:tilt:, debug=0"
+seq &scs_st, "T=m2:, D=m2:, F=m2:, I=m2:inst:"
 ###dbpr "m2:interlock"
 ##### Comment out during testing signal from GIS:
 ####
-#dbpf "m2:guideConfigReset.DIR","3"
-#####taskDelay(200)
-####dbpf "m2:guideConfigReset.DIR","3"
+dbpf "m2:guideConfigReset.DIR","3"
+dbpf "m2:guideConfigReset.DIR","3"
+
+dbpf "m2:setController.DIR","3"
+dbpf "m2:setController.DIR","3"
+
 ####
 ####dbpf "m2:byte3:b6","OFF"
 ####dbpf "m2:byte3:b7","OFF"
