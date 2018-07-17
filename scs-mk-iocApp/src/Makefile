@@ -27,6 +27,8 @@ scs-mk-ioc_DBD += pvload.dbd
 scs-mk-ioc_DBD += timelib.dbd
 scs-mk-ioc_DBD += slalib.dbd
 scs-mk-ioc_DBD += timeProbe.dbd
+scs-mk-ioc_DBD += listAlarmRecords.dbd
+scs-mk-ioc_DBD += systemTickTools.dbd
 scs-mk-ioc_DBD += initTrace.dbd
 scs-mk-ioc_DBD += symb.dbd
 scs-mk-ioc_DBD += scs.dbd
@@ -55,7 +57,6 @@ scs-mk-ioc_SRCS += eventBus.c
 scs-mk-ioc_SRCS += m2ParseMsg.c
 scs-mk-ioc_SRCS += showEngineering.c
 scs-mk-ioc_SRCS += guide.c
-scs-mk-ioc_SRCS += initTrace.c
 scs-mk-ioc_SRCS += scs.syms.cpp
 
 LIBRARY_IOC += scsSupport
@@ -76,6 +77,9 @@ scs-mk-ioc_LIBS += timelib
 scs-mk-ioc_LIBS += slalib
 scs-mk-ioc_LIBS += devIocStats 
 scs-mk-ioc_LIBS += timeProbe 
+scs-mk-ioc_LIBS += listAlarmRecords 
+scs-mk-ioc_LIBS += systemTickTools 
+scs-mk-ioc_LIBS += initTrace
 scs-mk-ioc_LIBS += Symb 
 
 # Finally link to the EPICS Base libraries
