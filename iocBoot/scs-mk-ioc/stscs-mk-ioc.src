@@ -3,7 +3,8 @@ $(LINUX_ONLY)#!${INSTALL}/bin/${ARCH}/scs-mk-ioc
 cd ${INSTALL}
 
 epicsEnvSet "IOCSH_PS1" "scs-mk-ioc>"
-epicsEnvSet "EPICS_CA_ADDR_LIST" "10.1.2.172"
+#epicsEnvSet "EPICS_CA_ADDR_LIST" "10.1.2.175"
+#epicsEnvSet "EPICS_CA_AUTO_ADDR_LIST" "NO"
 
 bspExtVerbosity=0
 ## Register all support components
@@ -63,29 +64,30 @@ dbpf "m2:interlockOverride","1"
 ##M2TS CEM POWER ON Card0, PORT7, Bit 0, HIGH #####
 #xy240_writePortBit (0,7,0,1)
 
-#dbpf "m2:guideConfigReset.DIR","0"
+dbpf "m2:guideConfigReset.DIR","0"
 ###### Start any sequence programs
-seq &timeSeq, "sys=m2:, top=tc1:"
+seq &timeSeq, "sys=m2:, top=tcs:"
 #seq &scs_mon "T=m2:, D=m2:"
 seq &tilt_st, "S=m2:tilt:, debug=0"
 seq &scs_st, "T=m2:, D=m2:, F=m2:, I=m2:inst:"
-###dbpr "m2:interlock"
+
+####dbpr "m2:interlock"
 ##### Comment out during testing signal from GIS:
 ####
 dbpf "m2:guideConfigReset.DIR","3"
-dbpf "m2:guideConfigReset.DIR","3"
+#dbpf "m2:guideConfigReset.DIR","3"
 
-dbpf "m2:setController.DIR","3"
+#dbpf "m2:setController.DIR","3"
 dbpf "m2:setController.DIR","3"
 
 ####
-####dbpf "m2:byte3:b6","OFF"
-####dbpf "m2:byte3:b7","OFF"
-####dbpf "m2:byte0:b7","OFF"
-####dbpf "m2:byte1:b0","OFF"
-####dbpf "m2:byte1:b4","NO"
-####dbpf "m2:byte0:b6","DISABLED"
-####dbpf "m2:byte0:b2","DISABLED"
-dbpf "m2:byte0:b3","0"
+dbpf "m2:byte3:b6","OFF"
+dbpf "m2:byte3:b7","OFF"
+dbpf "m2:byte0:b7","OFF"
+dbpf "m2:byte1:b0","OFF"
+dbpf "m2:byte1:b4","NO"
+dbpf "m2:byte0:b6","DISABLED"
+dbpf "m2:byte0:b2","DISABLED"
+#dbpf "m2:byte0:b3","0"
 ####
 
