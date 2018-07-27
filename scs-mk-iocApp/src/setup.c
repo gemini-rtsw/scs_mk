@@ -59,14 +59,6 @@
                            scsReceiveNow, commandQId, receiveQId 
                            SYSTEM_CLOCK_RATE */
 
-#define TRUESCSBASE     0xf0A00040      / * Base address of node 0 
-/* #define TRUESCSBASE     0xfAA00040  */    /* Base address of node 0 
-                                           reflective memory card (scs)  */
-#define TRUEM2BASE      0xf0600040      / * Base address of node 1 
-
-/*
-#define TRUEM2BASE      0xfA600040  */    /* Base address of node 1 
-                                           reflective memory card (m2 )  */
 extern void rmISR2(int);
 extern void rmISR3(int);
 
@@ -230,7 +222,7 @@ int scsInit (void)
       }
    }
 
-   printf ("initRefMem, scsPtr = 0x%p, scsBase = 0x%p\n",  scsPtr, scsBase); 
+   printf ("initRefMem, scsPtr = %p, scsBase = %p\n",  scsPtr, scsBase); 
 
    /* create command message queue */
    if ((commandQId = epicsMessageQueueCreate(100, sizeof (long))) == NULL)
