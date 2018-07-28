@@ -1,0 +1,523 @@
+SCS 4-0 July 27th, 2018
+    -RTEMS commissioning release.
+    -CR-18 3017
+    -Test Plan: https://docs.google.com/spreadsheets/d/1206e-bO0oc1QDNCqLsdCqeJliFkGwlOMvmT0ZAyMaKk/edit#gid=418137997
+    -RTEMS 4.10.2
+    -EPICS 3.14.12.7
+    -OMEGA RESET Module: 10.2.14.30 Channel 1
+    
+
+SCS 3-18 April 30th, 2015
+    - This include the latest Vibration Tracking (VTK) release.
+
+    - The VTK parameter changes are now automated between 200Hz,
+    100Hz and  50Hz guide frequencies. This means you can just
+    leave VTK running (but manually turn it off when you switch
+    to Altair).
+
+    - VTK is not yet released for Altair.
+
+    - The attached new SCS status screen shows when VTK is on.
+    The corresponding lag parameters will change automatically
+    as you change the guide frequency.
+
+    - VTK at 50Hz has longer convergence times which we'll work
+    to improve.
+
+    - The SCS PARK command will turn VTK OFF for you.
+
+    - Turning ON the SCS Following will *NOT* turn VTK ON (since
+    you're probably going to be tuning with Altair when you put
+    the SCS into Follow mode).
+
+    - Although P1 works with VTK, it's not yet qualified for LGS
+    mode. That pretty much rules out using P1 for now unless
+    there's a need for P1/NGS.
+
+    - Since Gemini's commissioning we have been guiding by
+    steering M2 at 1/2 the guiding sample rate. I.e., 200 Hz
+    guiding moves M2 only 100 Hz. 100Hz guiding moves M2 only
+    50Hz, etc. This is termed "Legacy Mode" guiding. The new SCS
+    release supports full sample-rate guiding, so 200Hz guiding
+    moves M2 at 200Hz. However, this mode is not yet qualified
+    for operations. ENT-15 0685 has been submitted for this
+    purpose. Until this work is finished Legacy Mode will be the
+    default.
+
+SCS Version 3-16 -February 18, 2015 mrippa
+    3 new highspeed channels xRawGuide, yRawGuide, zRawGuide
+
+SCS Version 3-15 -February 17, 2015 mrippa
+    Fixed typo in highspeed channels 4 through 12.
+
+SCS Version 3-14 -February 2015 mrippa
+    HighSpeed waveform records (see guide.c) are now FLOAT (4-bytes) to save space.
+
+
+SCS Version 3-12 -Jan 2015 mrippa
+
+    In July 2014 an Engineering Night Test (ENT14 0587) demonstrated a prototype of the vibration
+    tracking algorithm described in [1]. The test was largely successful and defined an SCS upgrade path to
+    allow selective tracking and rejection of vibration originating from M1 and outside the bandwidth of
+    the P2 wavefront sensor.
+
+    One problem found during the ENT was an error in the frequency tracking caused by incorrect phase
+    unwrapping which results in a limit cycle as shown in [1], sections 4.2.1.2 and 5.6.1. This SCS release
+    corrects this bug but needs to be functionally verified on-sky during a new ENT (ENT14-0651).
+    Additional features were also identified.
+    Here is the list of features and issues regarding this release:
+        1. New VTK specific EPICS records for distributed control requirements
+
+        2. New VTK specific EPICS configuration and control screens (See section 2)
+
+        3. New Synthetic Wave EPICS records for distributed control requirements.
+
+        4. New Synthetic Wave EPICS configuration and control screens (See secton 2)
+        
+        5. VTK Phase unwrapping bug fix
+        
+        6. VTK Recycling Mode is added to support daytime engineering mode as described [1], section
+5.5.
+
+Reference: 
+           [1] "H. Bonnet, Vibrations at Gemini", 2014
+           [2] "M.Rippa, ENT-14_0651Results" ,2015
+
+
+
+SCS Version 3-11 - Jan 30 2011 PG/RR
+        src/dat/SCSinitCP.dat
+        src/dat/limitsCP.dat
+            Updated values with values from the version in use at the telescope
+        src/scs/control.c
+        src/scs/control.h
+            Added support for the F2 OIWFS on node 8, and lots of debugging
+        startup/startupCP.vws
+            Removed initialization of actuator limits since this is done in
+            src/dat/limitsCP.dat
+
+SCS Version 3-10R1 - May 2009 Release
+      1. Includes new tiptiltGuideLimitFactor and FocusGuideLimitFactor,
+         which allows to be modified from the console. The default 
+         value for both is 1.0.
+
+SCS Version 3-10 - September 2008 Release
+      1. Includes libraries for multi-node RM diagnostics. These are
+         not normally run during nightly operations, but will be included
+         in this release.
+
+      2. Refactor initialize procedure without long delays between states.
+         Solves INIT ending in error at the CEM and properly moves M2/XY
+         to park positions without any user intervention.
+
+      3. Includes interrupt cycle profiling to measure how long the
+         fast-guide ISR takes to return to the SCS. This is helpful to
+         know since the fast-guide interrupt process is asynchronous in
+         the sense that there's nothing stopping the SCS from interrupting
+         the CEM again while the last fast-guide ISR is executing. So this
+         benchmark should always report fast-guide ISR completion times
+         much less than 1ms. If they're ever reported in the several ms
+         range there's danger of blowing the DOS stack: i.e., the ISR is
+         not reentrant.
+
+      4. Pseudo-guiding improvements to allow all engineers to safely
+         execute this handy tool. Previously you had to configure this at a
+         low level which was complicated. This is be controlled with a
+         new EPICS screen guideSimulate.dl.
+
+      5. Improvements to XY position plot. Includes:
+         a) correct axid labels,
+         b) proper range on the x-axis.
+         c) Increased number of saved plot points from 1000 to 5000.
+
+      6. New DM screen for Pseudo guiding control.
+
+      7. New DM screen entry under tolerances for the XY Deadband.
+
+      8. New feature to remotely set the XY Deadband. Implemented in
+         the CAD tolerance routines.
+
+      9. New feature to track the Position drift between microE's and Kamans
+
+
+SCS Version 3-9 - Refactored the EventSystem Sections:
+        - xycom.c   - Includes new task/ISR during chopping to listen
+                      for interrupts coming from M2 InPosition.
+                      Handler for said interrupt updates Event System
+                      and modifies the Guide Gate appropriately.
+        - control.c - New Guide Gate concept which turns ON|OFF 
+                      'applyGuide' as determined from above 
+                      interrupts.
+        - testFunctions.c:
+                      Includes new tasks for running a daytime guide 
+                      simulator.
+
+SCS Version dev - Modifications toward previous version:
+
+        - scs.c: Modify process guide loop control.
+        - xycom.c: removed messages starting chopping
+
+SCS Version 3-6 - Modifications toward previous version:
+
+        - modify clearGuideFocus record name
+        - modify the clearGuideFocus from 2500 to 500 (manual steps)
+        - implement an automatic way to clear guide focus
+
+SCS Version 3-5 - Modifications toward previous version:
+
+        - added the beam modification missing
+
+SCS Version 3-4 - Modifications toward previous version:
+
+        - Added periscope control software
+        - modifications to fix the actuator out of range problem
+        - Modification to make the move more reliable.
+        - Modification to set the BUSY/IDLE transition at initialization.
+        - This SCS software version uses CEM software V3-6.
+
+SCS Version 3-3 - Modifications toward previous version:
+
+        - src/scs.c : added check beam value in tcsReceiveDemand function
+
+SCS Version 3-2 - Modifications toward previous version:
+
+        - no comments
+
+SCS Version 3-1 - Modifications toward previous version:
+
+        - startup/startup[MK,CP].vws : added status bit initialization.
+
+        - src/guide.c : "Tilt Z error" calculation takes into account guiding
+                        status flag (guideOn).
+
+        - src/chop.c : changed the lower limit from 0.1 to 0.12. (TWO_POINT_MAX)
+
+        - src/scs_st.st : modified when move or follow to wait in BUSY state until 
+                          XY positioner stops to move.
+
+SCS Version 3-0 - Modifications toward previous version:
+
+        - adl/confirm.adl : 
+                        button label changed from NO to CLOSE
+
+        - adl/guideconfig.adl :
+                        default button removed 
+
+        - adl/master.adl:
+                        added "Reset guide config" option menu.
+
+        - adl/resetguideconfig.adl:
+                        new file to implement the "Reset guide config" option
+
+        - adl/status.adl:
+                        added status bits for:
+                                mirror control, vibration loop, actuator power,
+                                offloader, chopping, decs, CEM temp.
+
+        - capfast/guide.sch:
+                        added the channel to implement reset guide option       
+
+        - src/dat/SCSinitCP.dat:
+                        updated the default XY positioner value (4400,800)
+
+        - src/dat/SCSinitMK.dat:
+                        updated default set controller values
+
+        - src/scs/chop.c:
+                        removed send twice CHOP_CHANGE command to CEM.
+
+        - src/scs/control.c : 
+                        butter worth filter code added but not enable yet
+                        FAST_ONLY send to CEM half of the time
+
+        - src/scs/control.h : 
+                        butter worth filter definition
+        
+        - src/scs/guide.c:
+                        implement all epics function for "Reset Guide config"
+
+        - src/scs/scs.c:
+                        implement chop improvements
+
+        - src/scs/scs_st.st:
+                        implement chop improvements
+
+        - src/scs/showEngineering.c:
+                        XY_CMD_OUT_OF_RANGE test added.
+
+        - src/scs/xycom.c:
+                        implement new chop functionality.
+
+
+SCS Version XXX - Modifications toward previous version:
+        -           : CEM error messages showed up in the SAD dm-screen
+        - scs_st.st : improving XY positioner movement after init
+
+
+        
+SCS Version 2-4 - Modifications toward previous version:
+        - guide.c   : clear updateInterval.gaos to zero. (CBO change)
+        - scs_st.st : added clean up guiding values at SCS initialization
+        - guide.c: removed loop for the big focus value. Several click 
+                   implemented are necessary now. Limit is 2500 um.
+        - control.c: Freeze TT guide values when stopping the guide loop
+                     First attempt to clean this file
+                     DEBUG_MED added 
+        - control.c: added gaos interval control
+        - guide.h: added gaos var to updateInterval structure
+        - guide.c: added loop to handle big focus value (does not work)
+        - xycom.c: modified to always set BEAM A when chop stop.
+        - control.c: fix problem to have two WFS to work simultaneously
+                     now GAOS guide data are read and handled by SCS as
+                     for all the WFS
+
+SCS Version 2-3 - modification done:
+
+                        - src/scs/utilities.c:
+                                setPid function: removed axis correction
+                                set to zero.
+
+                        - src/scs/guide.c:
+                                removed reset of X/Y tilt guide values
+                                in function CADguideControl.
+
+SCS Version 2-2 - modification done:
+
+        ALTAIR BASE VERSION used currently at MK and CP. (09/24/2002)
+
+                        - scsInstall:
+                                modified for dl directory problem
+                                version 2-1 didn't work
+
+SCS Version 2-1 - modification done:
+
+                        - scsInstall:
+                                modified for dl directory problem
+
+
+SCS Version 2-0 - modification done:
+
+        This version its the base version for ALTAIR requests.
+        In fact, it includes all V1-45 modifications and it used  
+        currently (09/24/2002) at MK and CP. 
+
+                        - scsInstall:
+                                set executable permission to scs_dm.sh file
+
+
+SCS Version 45 - modification done:
+
+                        - src/scs/xycom.c:
+                                Fixed bug to set DECS ON when start chopping
+                        - src/scs/scs_st.st
+                                park alghoritm improved
+                        - adl/master.adl
+                                added "Clear Tilt Guide" option menu.
+                        - startup/startupCp.vws and startupMK.vws:      
+                                added delay(1500) 
+                        - capfast/guide.sch
+                                added clear guide focus implementation
+                        - adl/cleartiltguide.adl:
+                                crated the dm-screen
+                        - src/scs/control.c:
+                                modified to guide using synchro node number
+                        - src/scs/control.h
+                                synchro memory map updated
+                                added OI and GAOS synchro bus number
+                        - src/scs/guide.c
+                                added CADclearTiltGuide function 
+                        - Corinne's comments:
+                                modified colors.adl file
+                                updated MK default position
+                                removed "source ~/gem7" from scs_dm.sh script
+
+SCS Version 44 - modification done:
+                        - run the SCS software under PPC cpu.
+                        - Park command doesn't turn off actuator power
+                        - Updated GN Tilt and Positioner default position 
+                        - Chop loop updated
+
+                        - Corinne's modification:
+                          - scsInstall: add RELEASE.NOTES during an installation
+                          - guide.h :   define updateInterval.oiwfs
+                          - guide.c :   init updateInterval.oiwfs to zero
+                          - control.c : oiwfs also does the handshaking with 
+                                        the interval variable.
+
+
+SCS Version 43 - modification done:
+                        - Port to EPICS3.13.4 (GEM7)
+
+SCS Version 42 - modification done:
+
+                        - added files low[MK-CP].dat. high[MK-CP].dat,
+                        stop[MK-CP].dat, pass[MK-CP].dat missing in the
+                        previous version
+        
+SCS Version 41 - modification done:
+
+                        - For some reason version V1-40 (previous) is corrupted.
+                        The base of this version is V1-34. Then, I implemented
+                        modifications from version V1-35 to V1-40, see below.
+
+                - Corinne's modification:
+
+                        - in order to have PID for both x and y tild:
+                        file config.c, pidconfig.adl and SCSinit.dat.                           
+
+
+                        
+SCS Version 40 - modification done:
+
+                        - SCSinitMK.dat file:
+                          initial values of $(top)byte1:b4.ZNAM to "NO"
+                          initial values of $(top)byte1:b4.ONAM to "Yes"
+
+SCS Version 39 - modification done:
+
+                        - scsInstall file. 
+                          configuration files (*.dat) copied from the 
+                          "data" directory.
+
+
+SCS Version 38 - modification done:
+
+                        - scsInstall file:
+                          configuration files copied now.
+
+SCS Version 37 - modification done:
+
+                        - scsInstall file. 
+                           configuration files (*.dat) copied from the 
+                           "src" directory.
+                          
+SCS Version 36 - modification done:
+
+                        - missing *.dat files in previous version
+
+SCS Version 35 - Several modification done:
+                        - Park command is doing its job now.
+                        - Busy/Idle transition.
+                        - SITE configuration files (CP,MK) 
+                        - XY positioner moving status added to the 
+                          status word send by CEM.
+                        - move command enhanced. Now, it remains busy until
+                          XY positioner stops its movement.
+                        - files *.dat removed from the src directory.
+
+SCS Version 34 - Now focus applied guide value is not automatically set to 
+                 zero when the guide loop is turned off. 
+                 A new command has been implemented "clear guide focus" to set 
+                 to zero the focus applied guide value.
+
+SCS Version 33 - A new feature implemented to handle initialization of TILT
+                 system and XY positioner system. Also, a new version in 
+                 CEM pc is also needed. Because, the new command XYINIT was
+                 implemented to that software level. 
+
+                 A park command now reaches the predefined position at the
+                 first try.
+                 At the same time, MOFFLOFF CEM command was removed from the 
+                 PARK command, that means, after a park the offloader are still
+                 ON.
+
+                 A modification from Corinne in control.c file. 
+
+
+
+                 Files modified:
+
+                        control.c : Corinne's modification and added string 
+                                CMD_INITXY to the commands list.
+
+                        control.h : CMD_INITXY=59 added to the enumerated type.
+
+                        house.c : CADinitXY function added to handle XYINIT 
+                                command.
+
+                        scs_st.stpp : Added the code to control XY Positioner
+                                initialization process. Functions added 
+                                startInitXY, waitForInitStartXY and
+                                waitForInitCompletionXY.
+
+                                Beside that, the park command is not turning 
+                                OFF the offloader, MOFFLOFF command removed.
+                                A new SNL state parkWaitForFineCoincedence 
+                                created to permit the close loop movement
+                                of actuators, before VEND and MEND commands.
+
+                        showEngineering.c : Added CMD_INITXY command to the list        
+                        utilities.h : defined Y_POSITION_LIMIT 6000.00. This
+                                variable was used but not defined.
+                
+                                                                 
+
+
+
+
+SCS Version 32 - Now it is possible to do closed loop focus when chopping -
+                 Version used during the OSCIR run of the 1st to the 10th 
+                 of February 2001
+SCS Version 31 - Remember how we are flipping the demands in "readDemand"
+                 so that dmd0 high means A and low means B (as input).
+                 Well, now we have to do a second flip (in updateEventPage)
+                 - you would like these two inversions would cancel each
+                 other out, but such is not the case. 
+               - Also now implement Corinne's idea of ensuring that 
+                 ISR doesn't get MORE interrupts than the number of
+                 semaphores it gives to xyIntHandler. Note: now that
+                 DECS is not being toggled for each nod (and neither is
+                 CHOP), there are no missed interrupts anymore - but 
+                 leave this change in, just in case.
+
+SCS Version 30 - Updates to xycom.c to accommodate timing of CHOP ON
+                 command followed by the start of the ICS optical 
+                 signals at some time, approx. 2 sec later. Uses new
+                 globals to indicate chop "pending" condition and for
+                 M2's response to CHOP ON.
+               - Add values to SCSinit for PID control to be ON.
+
+SCS Version 29 - New way of chopping and guiding. In processguides,
+                 set applyGuide to TRUE when zernickes not identically zero.
+               - cbaf/dbaf name change with changes to TCS
+               - sync mask displayed on status dm
+               - ring buffers in CEM and MCDSP are togglable via primitive
+                 commands page.
+
+SCS Version 28 - Changes related to getting chopping and guiding to work
+                 from an externally sync'd STROBED ICS (OSCIR and signal
+                 generator). A lot of files here. Xycom.c is new and right
+                 now consists of the low-level driver routines and the
+                 higher level chop control routines. It would be nice to
+                 separate these two types of routines (moving the higher
+                 level stuff up to chopControl.c), but it is not a priority,
+                 only a nicety.
+
+SCS Version 23-27 - Switchover to using instRelease with gemConfig to install
+                 binaries and data files on scott:/gemini/scs/Vx-xx and vega:
+                 /gemini/scs/Vx-xx
+ 
+SCS Version 22 - New CADs to allow toggle of PID application for tilt and
+                 focus. The two CADs are independent, i.e. you can apply
+                 the tilt PID and NOT the focus PID, etc.
+               - The default setting is that BOTH PIDs (tilt and focus) 
+                 are ON
+               - M2 status dm screen displays summed tilt+guide as total
+                 demand
+               - No longer using Rate Limit or Wind Up Limit in the PID
+                 control alg. Just limiting M2 demands to not ask for more
+                 than 100 um at a time.
+
+SCS Version 21 - New CADs to drive offloaders, deployable baffles, central
+                 baffle and XY positioner stepper motors individually
+               - New info written to SCS from M2 via RM to indicate
+                 initialization state and last recorded M2 error
+               - Increased Z_GUIDE_STEP_LIMIT from 100 um to 500
+
+SCS Version 20 - New CAD added to drive followers
+               - Additions to checksum make it require 17jan2000 release
+                 of M2 code.
+
+SCS Version 19 - header files created for all files.
+               - globals.{c,h} and scs_const.h  
+
