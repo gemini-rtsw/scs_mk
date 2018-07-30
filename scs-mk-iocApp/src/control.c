@@ -981,6 +981,7 @@ void processGuides (void)
    long command = FAST_ONLY;
    location    position;
    converted   result = {0,0,0};
+   int indx = 0;
    long lastNS = 0;
 
    long sensedGuideRate = GUIDE_200_HZ;
@@ -1746,11 +1747,24 @@ void processGuides (void)
 
          /* flag availability of new data */
          /* The original ideal of sending only everyother pulse has bee removed */
-         rmIntSend (INT2, M2_NODE);
-      }
-      else /* simulation active, write to m2 buffer */
+          if (!sendpulse) {
+             indx++;
+
+             /*Toggle sendpulse back to off for value 1.
+              * Greater than 1 is continuous mode*/
+             if (command > FAST_ONLY || indx > 1){
+                 mutex7++;
+                 rmIntSend (INT2, M2_NODE);
+                 indx = 0;
+             }
+         }
+         else{
+             rmIntSend (INT2, M2_NODE);
+         } 
+       }
+       else /* simulation active, write to m2 buffer */
       {
-	 if ( m2MemFree ) {
+	      if ( m2MemFree ) {
             mutex1++;
             epicsMutexLock(m2MemFree);
             m2Ptr->page0.xTiltGuide = (float) xNetGuideU;
@@ -1777,9 +1791,9 @@ void processGuides (void)
 
             epicsMutexUnlock(m2MemFree);
             mutex2++;
-	 } else {
+	      } else {
             errorLog ("processGuides - couldn't obtain m2MemFree mutex", 1, ON);
-	 }
+	      }
          /* print command to screen for testing */
 
          if ((command > POSITION) && (debugLevel == DEBUG_MIN))
@@ -2270,7 +2284,6 @@ void slowTransmit (void)
  */
 
 /* ===================================================================== */
-static int scsrx5= 0;
 
 void tiltReceive (void) 
 {
@@ -2342,7 +2355,6 @@ void tiltReceive (void)
          errorLog ("tiltReceive - couldn't obtain m2MemFree mutex", 1, ON);
        }
          /* flag status data available */
-	     scsrx5++;
          epicsEventSignal(scsReceiveNow);
 
          /* print command to screen for testing */
@@ -2408,6 +2420,7 @@ static int scsrx3= 0;
 static int scsrx3a= 0;
 static int scsrx3b= 0;
 static int scsrx4= 0;
+static int scsrx5= 0;
 
 void scsReceive (void)
 {
@@ -2499,6 +2512,7 @@ void scsReceive (void)
 
                  if (local.NS != localStatusBlock.NR)
                  {
+                     scsrx5++;
                      errlogPrintf  ("scsReceive - frame unacknowledged localNS=%ld, statblkNR=%ld\n",
                              local.NS, localStatusBlock.NR);
                  }
