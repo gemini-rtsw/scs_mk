@@ -945,7 +945,7 @@ assign topEndSad to "{D}topEnd.VAL";
 string chopping;                        /* currently chopping (yes or no) */
 assign chopping to "{D}chopping.VAL";
 
-string inPositionSad;                   /* in position (1=not in position, 0=in position) */
+int32_t inPositionSad;                   /* in position (1=not in position, 0=in position) */
 assign inPositionSad to "{D}inPosition.VAL";
 
 string deployableSad;                   /* deployable baffle position (key as for demand) */
@@ -3901,9 +3901,9 @@ ss monitorSad {
 
             epicsMutexLock(refMemFree);
             if(scsPtr->page1.inPosition != 0 || followOn || guideOn)
-               strncpy(inPositionSad, "TRUE", MAX_STRING_SIZE - 1);
+                inPositionSad = 1;
             else
-               strncpy(inPositionSad, "FALSE", MAX_STRING_SIZE - 1);
+                inPositionSad = 0;
 
 
             /*strncpy(topEndSad, topEndNames[scsPtr->page1.topEnd], 
