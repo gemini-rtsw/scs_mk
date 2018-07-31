@@ -2421,11 +2421,13 @@ static int scsrx3a= 0;
 static int scsrx3b= 0;
 static int scsrx4= 0;
 static int scsrx5= 0;
+static int NsNrTolerance = 1;
 
 void scsReceive (void)
 {
    long simCheck = 0xabcd;
    statusBlock localStatusBlock;
+   int32_t NsNrDiff = 0;
 
    for (;;)
    {
@@ -2501,20 +2503,25 @@ void scsReceive (void)
                          /*local.m2Heartbeat, localStatusBlock.heartbeat);*/
                  local.m2Heartbeat = localStatusBlock.heartbeat;
 
-		         if (refMemFree) {
+                 if (refMemFree) {
                     epicsMutexLock(refMemFree);
                     *(statusBlock *) & scsPtr->page1 = localStatusBlock;
                     epicsMutexUnlock(refMemFree); 
-		            scsrx3b++; 
+                    scsrx3b++; 
                  } else {
                    errorLog ("scsReceive - couldn't obtain refMemFree mutex", 1, ON);
                  }
 
+                 NsNrDiff = abs(local.NS - localStatusBlock.NR);
                  if (local.NS != localStatusBlock.NR)
                  {
                      scsrx5++;
-                     errlogPrintf  ("scsReceive - frame unacknowledged localNS=%ld, statblkNR=%ld\n",
-                             local.NS, localStatusBlock.NR);
+
+                     if (NsNrDiff > NsNrTolerance ) {
+                         
+                         errlogPrintf  ("scsReceive - last frame unacknowledged: NsNrDiff=%ld, NS=%ld, NR=%ld\n",
+                                        NsNrDiff, local.NS, localStatusBlock.NR);
+                     }
                  }
 
                  if (local.testRequest == 0 && 
@@ -3405,6 +3412,7 @@ epicsExportAddress(int, scsrx3a );
 epicsExportAddress(int, scsrx3b );
 epicsExportAddress(int, scsrx4 );
 epicsExportAddress(int, scsrx5 );
+epicsExportAddress(int, NsNrTolerance );
 epicsExportAddress(int, isr2 );
 epicsExportAddress(int, isr3 );
 epicsExportAddress(int, showcs );

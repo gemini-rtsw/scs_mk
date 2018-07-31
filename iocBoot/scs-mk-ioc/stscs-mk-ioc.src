@@ -27,7 +27,7 @@ bc635TimeSetTpPrio (60)
 #bcUseRTCMode()
 
 # - Master ? Simulate ? intPerSecond, intPerTick, timeOffset (microsec)
-BCconfigure (0, 0, 200, 1, 0)
+BCconfigure (0, 0, 1000, 1, 0)
 
 # initialise the xycom 240
 #drvXy240Config(1, 32, 0xd000)

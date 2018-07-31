@@ -1,3 +1,14 @@
+SCS 4-1 July 30th, 2018
+    -Identified CRC instability during full-rate 200 Hz guiding.
+     The acknowledgement frames appear to only lag by 1. No
+     undesired affects are shown in data propagation. Further the CEM
+     'LOSTFRAMES' command doesn't record any missed interrupts.
+     So, this appears to be an accounting issue inside the control.c,
+     in either the tilt_receive or scsReceive routines.
+
+    -Added code to monitor logging of mismatched frames > 1.
+    -Increase Bancomm System clock tick from 200 to 1000 ticks per second.
+
 SCS 4-0 July 27th, 2018
     -RTEMS commissioning release.
     -CR-18 3017
