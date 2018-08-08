@@ -224,6 +224,12 @@ int scsInit (void)
 
    printf ("initRefMem, scsPtr = %p, scsBase = %p\n",  scsPtr, scsBase); 
 
+   if ((sbStatus = (SynchroStatus *) malloc (sizeof (SynchroStatus))) ==NULL )
+   {
+      printf ("malloc fail on creation of sbStatus buffer\n");
+      return (ERROR);
+   }
+
    /* create command message queue */
    if ((commandQId = epicsMessageQueueCreate(100, sizeof (long))) == NULL)
    {
@@ -264,6 +270,7 @@ int scsInit (void)
    epicsMutexUnlock(m2MemFree);
    mutex16++;
    memset ((void *) scsBase, 0, sizeof (memMap));
+   memset ((void *) sbStatus, 0, sizeof (SynchroStatus));
 
    /* Do in startup in order that xycom has already been inited.
     * Then, if TIME_LATENCY needed, everything w.r.t. port addresses will
@@ -275,7 +282,7 @@ int scsInit (void)
 
    /* spawn communication tasks */  
    /* these had been medium priority for GS */
-   epicsThreadMustCreate("tscsRx", epicsThreadPriorityMedium,
+   epicsThreadMustCreate("tscsRx", epicsThreadPriorityHigh,
                   epicsThreadGetStackSize(epicsThreadStackBig),
                   (EPICSTHREADFUNC)scsReceive, (void *)NULL);
 
