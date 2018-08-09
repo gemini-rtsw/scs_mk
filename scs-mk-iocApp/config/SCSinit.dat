@@ -121,7 +121,7 @@ double  $(top)tolerance.F	= 50.0; # xy positioner deadband in microns
 
 # baffle position defaults
 
-long	$(top)central.VAL	= 0;	# position 1 (closed)
+long	$(top)centralBaffle.VAL	= 0;	# position 1 (closed)
 long	$(top)deployable.VAL	= 0;	# retracted
 
 # servo bandwidth
