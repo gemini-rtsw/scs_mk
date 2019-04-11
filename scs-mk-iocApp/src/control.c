@@ -1726,11 +1726,12 @@ void processGuides (void)
          scsBase->page0.xGrossTiltDmd = scsBase->page0.AxTilt + (float) xNetGuideU;
          scsBase->page0.yGrossTiltDmd = scsBase->page0.AyTilt + (float) yNetGuideU;
 
-         /* fetch command from message queue */
-         if( epicsMessageQueueTryReceive(commandQId, (char *) &command, sizeof (long)) < 0 ) {
-            errlogPrintf("processGuides - command error. deferred to FAST_ONLY" );
+         /* fetch command from message queue 
+          *
+          * epicsMessageQueueTryReceive -1 means empty queue so just defer to FAST_ONLY
+          * */
+         if( epicsMessageQueueTryReceive(commandQId, (char *) &command, sizeof (long)) < 0 )
             command = FAST_ONLY;
-         }
 
          if (command == CMD_TEST)
             local.testRequest = 1;
