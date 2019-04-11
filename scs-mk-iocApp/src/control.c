@@ -1728,7 +1728,7 @@ void processGuides (void)
 
          /* fetch command from message queue */
          if( epicsMessageQueueTryReceive(commandQId, (char *) &command, sizeof (long)) < 0 ) {
-            errlogPrintf("processGuides - command error. deferred to FAST_ONLY", );
+            errlogPrintf("processGuides - command error. deferred to FAST_ONLY" );
             command = FAST_ONLY;
          }
 
