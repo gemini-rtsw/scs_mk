@@ -1739,7 +1739,7 @@ void processGuides (void)
          /* print command to screen for testing */
          if ((command > POSITION) && (debugLevel == DEBUG_MED))
          {
-            errlogPrintf ("processGuides - sent command =  %s (%d)", 
+            errlogPrintf ("processGuides - sent command =  %s (%d)\n", 
                   m2CmdName[command], (int)command);
          }
 
@@ -2553,7 +2553,7 @@ void scsReceive (void)
          }
          else
          {
-             if (debugLevel > DEBUG_RESERVED1)
+             if (debugLevel >= DEBUG_MED)
              {
                  sprintf(errBuff, "checksum calc = %lx, received = %lx\n", 
                          simCheck, localStatusBlock.checksum);
