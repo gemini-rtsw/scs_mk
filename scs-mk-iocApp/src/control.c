@@ -1727,8 +1727,10 @@ void processGuides (void)
          scsBase->page0.yGrossTiltDmd = scsBase->page0.AyTilt + (float) yNetGuideU;
 
          /* fetch command from message queue */
-         if( epicsMessageQueueTryReceive(commandQId, (char *) &command, sizeof (long)) < 0 )
+         if( epicsMessageQueueTryReceive(commandQId, (char *) &command, sizeof (long)) < 0 ) {
+            errlogPrintf("processGuides - command error. deferred to FAST_ONLY", );
             command = FAST_ONLY;
+         }
 
          if (command == CMD_TEST)
             local.testRequest = 1;
@@ -1744,7 +1746,7 @@ void processGuides (void)
          lastNS = scsBase->page0.NS;
          scsBase->page0.NS = ++local.NS;
          scsBase->page0.heartbeat = local.scsHeartbeat++;
-         if (debugLevel > 0)
+         if (debugLevel == DEBUG_RESERVED1)
          {
             epicsPrintf("SCS sending NS = %ld, local.hb=%ld\n",
                     lastNS, local.scsHeartbeat);
