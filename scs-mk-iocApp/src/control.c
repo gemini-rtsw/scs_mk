@@ -1084,14 +1084,14 @@ void processGuides (void)
          {
             if (scsBase->pwfs1.interval > updateInterval.pwfs1) 
             {
-               if ((debugLevel > DEBUG_MIN) & (debugLevel <= DEBUG_MED))
+               if ((debugLevel > DEBUG_MED) & (debugLevel <= DEBUG_MAX))
                {
                   epicsPrintf("processGuides - increasing time detected for PWFS1\n");
                }
                updateInterval.pwfs1 = scsBase->pwfs1.interval;
                updateTime.pwfs1 = scsBase->pwfs1.time;
 
-               if ((debugLevel > DEBUG_MIN) & (debugLevel <= DEBUG_MED))
+               if ((debugLevel > DEBUG_MED) & (debugLevel <= DEBUG_MAX))
                {
                   epicsPrintf("processGuides - read RM data from PWFS1\n");
                }
@@ -1142,7 +1142,7 @@ void processGuides (void)
             if (scsBase->pwfs2.interval > updateInterval.pwfs2) 
             {
                /* Then check PWFS2 */
-               if ((debugLevel > DEBUG_MIN ) & (debugLevel <= DEBUG_MED))
+               if ((debugLevel > DEBUG_MED ) & (debugLevel <= DEBUG_MAX))
                {
                   epicsPrintf("increasing time detected for PWFS2\n"); 
                }
@@ -1150,7 +1150,7 @@ void processGuides (void)
                updateInterval.pwfs2 = scsBase->pwfs2.interval; 
                updateTime.pwfs2 = scsBase->pwfs2.time;
 
-               if ((debugLevel > DEBUG_MIN) & (debugLevel <= DEBUG_MED))
+               if ((debugLevel > DEBUG_MED) & (debugLevel <= DEBUG_MAX))
                {
                   epicsPrintf("processGuides - read RM data from PWFS2\n");
                }
@@ -1227,7 +1227,7 @@ void processGuides (void)
                updateTime.oiwfs = scsBase->oiwfs.time;
                updateInterval.oiwfs = scsBase->oiwfs.interval; 
 
-               if ((debugLevel > DEBUG_MIN) & (debugLevel <= DEBUG_MED))
+               if ((debugLevel > DEBUG_MED) & (debugLevel <= DEBUG_MAX))
                {
                   epicsPrintf("processGuides - read RM data from OIWFS\n");
                }
@@ -1284,7 +1284,7 @@ void processGuides (void)
                updateTime.gaos = scsBase->gaos.time;
                updateInterval.gaos = scsBase->gaos.interval; 
 
-               if ((debugLevel > DEBUG_MIN) & (debugLevel <= DEBUG_MED))
+               if ((debugLevel > DEBUG_MED) & (debugLevel <= DEBUG_MAX))
                {
                   epicsPrintf("processGuides - read RM data from GAOS\n");
                }
@@ -1342,7 +1342,7 @@ void processGuides (void)
                updateTime.gpi = scsBase->gpi.time;
                updateInterval.gpi = scsBase->gpi.interval; 
 
-               if ((debugLevel > DEBUG_MIN) & (debugLevel <= DEBUG_MED))
+               if ((debugLevel > DEBUG_MED) & (debugLevel <= DEBUG_MAX))
                {
                   printf("processGuides - read RM data from GPI\n");
                }
