@@ -3892,6 +3892,11 @@ ss monitorSad {
    }
 
    state updateSad {
+      option +e;
+      entry{
+        errlogPrintf("updateSad: enter\n");
+      }
+
       when(delay(3.0)) {
          monitorSadState = UPDATESAD; 
          pvPut(monitorSadState);
@@ -4035,8 +4040,41 @@ ss monitorSad {
             pvPut(zerr[source]);
          }   
 
-      }   state updateSad
-   }
+      }  state updateSad
+
+
+      /*
+        When checkBaffleFlag is TRUE, we expect "MOVING" state
+        in the deployableSad.
+      */
+
+      when(checkBaffleFlag) {
+      } state checkBaffle
+
+    }
+
+    state checkBaffle {
+
+      option -e;
+      option -t;
+      entry{
+        errlogPrintf("checkBaffle enter: dbafpos=%ld\n",scsPtr->page1.deployBaffle);
+      }
+
+      when (delay(5)) {
+          
+        checkBaffleFlag = 0;
+      } state updateSad
+      
+      when (delay(1)) {
+
+      } state checkBaffle
+
+      exit {
+        errlogPrintf("checkBaffle exit: dbafpos=%ld\n",scsPtr->page1.deployBaffle);
+      }
+    }
+
 }
 
 /* ===================================================================== */
