@@ -4055,7 +4055,7 @@ ss monitorSad {
 
     state checkBaffle {
 
-      option -e;
+      option +e;
       option -t;
       entry{
         errlogPrintf("checkBaffle enter: dbafpos=%ld\n",scsPtr->page1.deployBaffle);
@@ -4066,10 +4066,6 @@ ss monitorSad {
         checkBaffleFlag = 0;
       } state updateSad
       
-      when (delay(1)) {
-
-      } state checkBaffle
-
       exit {
         errlogPrintf("checkBaffle exit: dbafpos=%ld\n",scsPtr->page1.deployBaffle);
       }
