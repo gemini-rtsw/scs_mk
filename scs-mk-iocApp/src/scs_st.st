@@ -4061,11 +4061,24 @@ ss monitorSad {
         errlogPrintf("checkBaffle enter: dbafpos=%ld\n",scsPtr->page1.deployBaffle);
       }
 
-      when (delay(5)) {
+      when (delay(3)) {
           
+        errlogPrintf("checkBaffle delay 3 expired: return to updateSad.\n");
+
+        /* If not moving send the command again*/
+        if (scsPtr->page1.deployBaffle >= 0)  {
+
+            errlogPrintf("checkBaffle: Failed to move when commanded. Try again.\n");
+            writeCommand(BAFFLE_CHANGE);
+        }
+
         checkBaffleFlag = 0;
       } state updateSad
       
+      when (delay(1)){
+
+      } state checkBaffle
+
       exit {
         errlogPrintf("checkBaffle exit: dbafpos=%ld\n",scsPtr->page1.deployBaffle);
       }

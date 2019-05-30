@@ -174,7 +174,7 @@ char *depBaffle[] =
 };
 
 /*Pedantic check to send command again if Baffle Move fails to enter MOVING*/
-long checkBaffleFlag = 0;
+int checkBaffleFlag = 0;
 
 /* ===================================================================== */
 /*
@@ -2962,6 +2962,7 @@ long    CADmovePeriscope (struct cadRecord * pcad)
 }
 
 
+epicsExportAddress(int, checkBaffleFlag );
 epicsRegisterFunction(CADmoveBaffle);
 epicsRegisterFunction(CADservoBandwidth);
 epicsRegisterFunction(dummyInit);
