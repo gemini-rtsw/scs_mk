@@ -47,6 +47,11 @@ scsInit
 #Start EPICS
 iocInit
 
+pvload "/gem_sw/etc/rtconfig/scs/SCSinit.pv", "top = m2:"
+pvload "/gem_sw/etc/rtconfig/scs/xforms.pv", "top = m2:"
+pvload "/gem_sw/etc/rtconfig/scs/limits.pv", "top = m2:"
+pvload "/gem_sw/etc/rtconfig/scs/instConfig.pv", "I = m2:inst:"
+
 # set debug level for test debugging
 #
 # TODO: Rippa confirm if these are obsolete, then remove
@@ -77,5 +82,4 @@ dbpf "m2:guideConfigReset.DIR","3"
 
 dbpf "m2:setController.DIR","2"
 dbpf "m2:setController.DIR","3"
-
 

@@ -335,8 +335,6 @@ long readHealthInit(struct genSubRecord *pgsub);
 
 long readHealth(struct genSubRecord *pgsub);
 
-int loadInitFiles(void *);
-
 double confine(double value, double upper, double lower);
 
 int setPid(int axis, double P, double I, double D, 

@@ -49,7 +49,7 @@
 #include <vmi5588.h>    /* FOr reflective memory card routines */
 
 #include "setup.h"
-#include "utilities.h"  /* For errorLog, loadInitFiles, compileStatus,
+#include "utilities.h"  /* For errorLog, compileStatus,
                            statusCompiled, doPvLoad, pvLoadComplete */
 #include "guide.h"      /* For createFilter, setPointFree */
 #include "m2Log.h"          /* For cadDirLog */
@@ -182,11 +182,6 @@ int scsInit (void)
    scsReceiveNow = epicsEventMustCreate(epicsEventEmpty);
    guideUpdateNow = epicsEventMustCreate(epicsEventEmpty);
    diagnosticsAvailable = epicsEventMustCreate(epicsEventEmpty);
-
-   /* spawn task to pvload initialisation data */
-   epicsThreadMustCreate("tloadInit", epicsThreadPriorityLow, 
-                     epicsThreadGetStackSize(epicsThreadStackBig),
-                     (EPICSTHREADFUNC)loadInitFiles, (void *)NULL);
 
    /* spawn control loop task */
    epicsThreadMustCreate("tslowTx",epicsThreadPriorityLow,
