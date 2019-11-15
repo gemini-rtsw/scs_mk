@@ -120,6 +120,13 @@
    %%#include "interlock.h"        /* For startGuideSim, endGuideSim */
    %%#include <vmi5588.h>        /* For vmi5588_reboot */
 
+   %%#include <epicsExport.h>
+/*
+#include <iocsh.h>
+#include <registryFunction.h>
+*/
+
+
 
    %%#include <stdlib.h>
    %%#include <string.h>
@@ -194,7 +201,7 @@
       static double   xyDeadband;
 
       static long     myOldGuideSimState = 0;
-
+      extern int loadComplete;
    }%
 
 
@@ -1569,7 +1576,7 @@ ss CADprocessor {
 
       option +e;
       entry {
-        printf("CADprocessor: loadFiles\n");
+         printf("CADprocessor: loadFiles\n");
          printf("CADprocessor:loadFiles 10.0 second timer\n");
       }
       when(delay(3.0) && loadComplete == COMPLETE)
@@ -4596,7 +4603,3 @@ ss clearguidefocusScs
    }
 
 }
-
-
-
-

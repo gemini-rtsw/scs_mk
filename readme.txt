@@ -2,8 +2,8 @@
 
 # Boot test version on sim5.
 configure-ioc -t work   \
-   -b /gem_sw/test/tcumming/ioc/scs/mk/bin/RTEMS-mvme2307/scs-mk-ioc.boot    \
-   -s /gem_sw/test/tcumming/ioc/scs/mk/bin/RTEMS-mvme2307/stscs-mk-ioc.boot  \
+   -b /gem_sw/test/tcumming/ioc/scs/mk/bin/RTEMS-mvme3100/scs-mk-ioc.boot    \
+   -s /gem_sw/test/tcumming/ioc/scs/mk/bin/RTEMS-mvme3100/stscs-mk-ioc.boot  \
    sim5
 
 # Boot test version on real scs (only one change from above)

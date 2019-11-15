@@ -86,6 +86,8 @@ int debugLevel = DEBUG_NONE;
 long inPosition = 0;
 frameChange *ag2m2[MAX_SOURCES];
 
+int loadComplete = 0;
+
 /* not used anywhere. 20171019 MDW */
 //SEM_ID compileStatus = NULL; 
 //SEM_ID statusCompiled = NULL;
@@ -2060,5 +2062,4 @@ epicsRegisterFunction(snlStateStringInit);
 epicsRegisterFunction(snlStateStringConvert);
 epicsRegisterFunction(driveEvent);
 epicsExportAddress(int, debugLevel);
-
-
+epicsExportAddress(int, loadComplete);

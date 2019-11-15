@@ -52,6 +52,8 @@ pvload "/gem_sw/etc/rtconfig/scs/xforms.pv", "top = m2:"
 pvload "/gem_sw/etc/rtconfig/scs/limits.pv", "top = m2:"
 pvload "/gem_sw/etc/rtconfig/scs/instConfig.pv", "I = m2:inst:"
 
+var loadComplete 1
+
 # set debug level for test debugging
 #
 # TODO: Rippa confirm if these are obsolete, then remove

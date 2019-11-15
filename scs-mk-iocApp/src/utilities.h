@@ -358,19 +358,10 @@ long scsStateStringInit (struct genSubRecord * pgsub);
 long driveEvent (struct subRecord * psub);
 
 /* Global variables */
-int loadComplete;
 extern int debugLevel;
 extern long inPosition;
 extern frameChange *ag2m2[MAX_SOURCES];
-
-/* not used anywhere. 20171019 MDW */
-//extern SEM_ID compileStatus;
-//extern SEM_ID statusCompiled;
-
-
 extern epicsEventId doPvLoad;
-//extern epicsEventId pvLoadComplete;
-
 extern frameOfReference frame;
 
 typedef struct {
@@ -499,4 +490,3 @@ int checkGuideModeChange( long mode);
 #define PHASOR_SR_HIGHLIMIT 200.0
 
 #endif
-
