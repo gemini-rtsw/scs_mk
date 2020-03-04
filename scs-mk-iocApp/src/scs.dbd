@@ -137,7 +137,6 @@ variable( waittime, double)
 variable( waittime2, double)
 variable( simLevel, int)
 variable( refmem_mon1, int)
-variable( loadComplete, int)
 
 variable( mutex1, int)
 variable( mutex2, int)

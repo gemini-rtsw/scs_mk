@@ -86,8 +86,6 @@ int debugLevel = DEBUG_NONE;
 long inPosition = 0;
 frameChange *ag2m2[MAX_SOURCES];
 
-int loadComplete = 0;
-
 /* not used anywhere. 20171019 MDW */
 //SEM_ID compileStatus = NULL; 
 //SEM_ID statusCompiled = NULL;
@@ -965,6 +963,41 @@ long readHealth(struct genSubRecord *pgsub)
     }
     return(OK);
 }   
+
+/* why aren't these being loaded in the startup script? */
+int loadInitFiles(void*p)
+{
+   for(;;)
+   {
+      epicsEventMustWait(doPvLoad);
+
+      errlogPrintf("pvload initialisation data\n");
+
+      if(pvload("./data/SCSinit.dat", SCSTOP, 0, 0) != OK)
+         errlogPrintf("pvload error SCSinit.dat\n");
+      else
+         errlogPrintf("pvload SCSinit.dat\n");
+                
+      if(pvload("./data/xforms.dat", SCSTOP, 0, 0) != OK)
+         errlogPrintf("pvload error xforms.dat\n");
+      else
+         errlogPrintf("pvload xforms.dat\n");
+
+      if(pvload("./data/limits.dat", SCSTOP, 0, 0) != OK)
+         errlogPrintf("pvload error limits.dat\n");
+      else
+         errlogPrintf("pvload limits.dat\n");
+
+      if(pvload("./data/instConfig.dat", INSTTOP, 0, 0) != OK)
+         errlogPrintf("pvload error instConfig.dat\n");
+      else
+         errlogPrintf("pvload instConfig.dat\n");
+
+      //epicsEventSignal(pvLoadComplete);
+      loadComplete = 1;
+    }
+}
+
 
 /* allow chop transition to be forced from engineering screens for testing */
 long  driveEvent (struct subRecord * psub)
@@ -2062,4 +2095,5 @@ epicsRegisterFunction(snlStateStringInit);
 epicsRegisterFunction(snlStateStringConvert);
 epicsRegisterFunction(driveEvent);
 epicsExportAddress(int, debugLevel);
-epicsExportAddress(int, loadComplete);
+
+
