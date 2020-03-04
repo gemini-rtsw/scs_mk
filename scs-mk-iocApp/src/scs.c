@@ -468,14 +468,14 @@ long receiveTcsDemand (struct genSubRecord * pgsub)
                 position.yPos = tcsUpdate[10];
 
 
-                if ((debugLevel > DEBUG_MIN) & (debugLevel <= DEBUG_MED))
+                if ((debugLevel > DEBUG_MED) & (debugLevel <= DEBUG_RESERVED1))
                 {
                     printf("before: xy = %f %f;", position.xPos, position.yPos);
                 }
 
                 tcs2m2 (&position);
 
-                if ((debugLevel > DEBUG_MIN) & (debugLevel <= DEBUG_MED))
+                if ((debugLevel > DEBUG_MED) & (debugLevel <= DEBUG_RESERVED1))
                 {
                     printf("after: xy = %f %f\n", 
                             position.xPosNew, position.yPosNew);

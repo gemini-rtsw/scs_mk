@@ -173,6 +173,9 @@ char *depBaffle[] =
      NULL
 };
 
+/*Pedantic check to send command again if Baffle Move fails to enter MOVING*/
+int checkBaffleFlag = 0;
+
 /* ===================================================================== */
 /*
  * Function name:
@@ -285,6 +288,8 @@ long    CADmoveBaffle (struct cadRecord * pcad)
             scsPtr->page0.centralBaffle = (long)central;
             epicsMutexUnlock(refMemFree);
 
+            
+            checkBaffleFlag = 1;
             writeCommand(BAFFLE_CHANGE);
 
             errlogPrintf( "sent command %2d to drive deployable to pos: %1d and periscope to pos: %1d\n",
@@ -2957,6 +2962,7 @@ long    CADmovePeriscope (struct cadRecord * pcad)
 }
 
 
+epicsExportAddress(int, checkBaffleFlag );
 epicsRegisterFunction(CADmoveBaffle);
 epicsRegisterFunction(CADservoBandwidth);
 epicsRegisterFunction(dummyInit);
