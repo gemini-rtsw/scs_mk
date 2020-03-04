@@ -226,6 +226,7 @@ int m2diags9 = 0;
 long    readM2Diagnostics (struct genSubRecord * pgsub)
 { 
     //short junk;
+    static int loopCount = 0;
     int index = 0;
     double act1[21], act2[21], act3[21], sys[21];
     location position;
@@ -234,6 +235,7 @@ long    readM2Diagnostics (struct genSubRecord * pgsub)
     char msg[M2_ERROR_MSG_SIZE];
     static long lastErrorSystem, lastErrorCode;  
 
+    loopCount++;
     if(simLevel == 0)
         ptr = scsBase;
     else
@@ -354,10 +356,11 @@ m2diags8++;
         strcpy(msg, parseM2Msg(m2errs));
 
         /* if requested, display the error on the crate's display */
-        if ((debugLevel > DEBUG_MIN) && (debugLevel <= DEBUG_MED))
+        if (loopCount == 200 && (debugLevel > DEBUG_MIN) && (debugLevel <= DEBUG_MED))
         {
-            printf("Last reported M2 error message: %s Sys=%ld; Code=%ld\n",
+            errlogPrintf("Last reported M2 error message: %s Sys=%ld; Code=%ld\n",
                     msg, m2errs->sysid, m2errs->code);
+            loopCount = 0;
         }
 
         /* Also log it once, whenever it changes */

@@ -3892,7 +3892,12 @@ ss monitorSad {
    }
 
    state updateSad {
-      when(delay(3.0)) {
+      option +e;
+      entry{
+        errlogPrintf("updateSad: enter\n");
+      }
+
+      when(delay(2.0)) {
          monitorSadState = UPDATESAD; 
          pvPut(monitorSadState);
          
@@ -4035,8 +4040,54 @@ ss monitorSad {
             pvPut(zerr[source]);
          }   
 
-      }   state updateSad
-   }
+      }  state updateSad
+
+
+      /*
+        When checkBaffleFlag is TRUE, we expect "MOVING" state
+        in the deployableSad.
+      */
+
+      when(checkBaffleFlag) {
+      } state checkBaffle
+
+    }
+
+    state checkBaffle {
+
+      option +e;
+      option -t;
+
+      entry{
+        errlogPrintf("checkBaffle enter: dbafpos=%ld\n",scsPtr->page1.deployBaffle);
+      }
+
+      /* Turn off further checks if demand and actual agree.*/
+      when (scsPtr->page0.deployBaffle == scsPtr->page1.deployBaffle) {
+          checkBaffleFlag = 0;
+      } state updateSad
+
+      when (delay(4)) {
+          
+        /* Must be MOVING (-1)...If not moving send the command again*/
+        if ( scsPtr->page1.deployBaffle >= 0)  {
+
+            errlogPrintf("checkBaffle: Failed to move when commanded. Try again.\n");
+            writeCommand(BAFFLE_CHANGE);
+        }
+
+        /* Stop checking if MOVING is true*/
+        else {
+          checkBaffleFlag = 0;
+        }
+
+      } state updateSad
+      
+      exit {
+        errlogPrintf("checkBaffle exit: dbafpos=%ld\n",scsPtr->page1.deployBaffle);
+      }
+    }
+
 }
 
 /* ===================================================================== */

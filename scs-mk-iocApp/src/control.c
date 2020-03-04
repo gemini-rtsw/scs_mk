@@ -1084,14 +1084,14 @@ void processGuides (void)
          {
             if (scsBase->pwfs1.interval > updateInterval.pwfs1) 
             {
-               if ((debugLevel > DEBUG_MIN) & (debugLevel <= DEBUG_MED))
+               if ((debugLevel > DEBUG_MED) & (debugLevel <= DEBUG_MAX))
                {
                   epicsPrintf("processGuides - increasing time detected for PWFS1\n");
                }
                updateInterval.pwfs1 = scsBase->pwfs1.interval;
                updateTime.pwfs1 = scsBase->pwfs1.time;
 
-               if ((debugLevel > DEBUG_MIN) & (debugLevel <= DEBUG_MED))
+               if ((debugLevel > DEBUG_MED) & (debugLevel <= DEBUG_MAX))
                {
                   epicsPrintf("processGuides - read RM data from PWFS1\n");
                }
@@ -1142,7 +1142,7 @@ void processGuides (void)
             if (scsBase->pwfs2.interval > updateInterval.pwfs2) 
             {
                /* Then check PWFS2 */
-               if ((debugLevel > DEBUG_MIN ) & (debugLevel <= DEBUG_MED))
+               if ((debugLevel > DEBUG_MED ) & (debugLevel <= DEBUG_MAX))
                {
                   epicsPrintf("increasing time detected for PWFS2\n"); 
                }
@@ -1150,7 +1150,7 @@ void processGuides (void)
                updateInterval.pwfs2 = scsBase->pwfs2.interval; 
                updateTime.pwfs2 = scsBase->pwfs2.time;
 
-               if ((debugLevel > DEBUG_MIN) & (debugLevel <= DEBUG_MED))
+               if ((debugLevel > DEBUG_MED) & (debugLevel <= DEBUG_MAX))
                {
                   epicsPrintf("processGuides - read RM data from PWFS2\n");
                }
@@ -1227,7 +1227,7 @@ void processGuides (void)
                updateTime.oiwfs = scsBase->oiwfs.time;
                updateInterval.oiwfs = scsBase->oiwfs.interval; 
 
-               if ((debugLevel > DEBUG_MIN) & (debugLevel <= DEBUG_MED))
+               if ((debugLevel > DEBUG_MED) & (debugLevel <= DEBUG_MAX))
                {
                   epicsPrintf("processGuides - read RM data from OIWFS\n");
                }
@@ -1284,7 +1284,7 @@ void processGuides (void)
                updateTime.gaos = scsBase->gaos.time;
                updateInterval.gaos = scsBase->gaos.interval; 
 
-               if ((debugLevel > DEBUG_MIN) & (debugLevel <= DEBUG_MED))
+               if ((debugLevel > DEBUG_MED) & (debugLevel <= DEBUG_MAX))
                {
                   epicsPrintf("processGuides - read RM data from GAOS\n");
                }
@@ -1342,7 +1342,7 @@ void processGuides (void)
                updateTime.gpi = scsBase->gpi.time;
                updateInterval.gpi = scsBase->gpi.interval; 
 
-               if ((debugLevel > DEBUG_MIN) & (debugLevel <= DEBUG_MED))
+               if ((debugLevel > DEBUG_MED) & (debugLevel <= DEBUG_MAX))
                {
                   printf("processGuides - read RM data from GPI\n");
                }
@@ -1726,7 +1726,10 @@ void processGuides (void)
          scsBase->page0.xGrossTiltDmd = scsBase->page0.AxTilt + (float) xNetGuideU;
          scsBase->page0.yGrossTiltDmd = scsBase->page0.AyTilt + (float) yNetGuideU;
 
-         /* fetch command from message queue */
+         /* fetch command from message queue 
+          *
+          * epicsMessageQueueTryReceive -1 means empty queue so just defer to FAST_ONLY
+          * */
          if( epicsMessageQueueTryReceive(commandQId, (char *) &command, sizeof (long)) < 0 )
             command = FAST_ONLY;
 
@@ -1736,7 +1739,7 @@ void processGuides (void)
          /* print command to screen for testing */
          if ((command > POSITION) && (debugLevel == DEBUG_MED))
          {
-            errlogPrintf ("processGuides - sent command =  %s (%d)", 
+            errlogPrintf ("processGuides - sent command =  %s (%d)\n", 
                   m2CmdName[command], (int)command);
          }
 
@@ -1744,7 +1747,7 @@ void processGuides (void)
          lastNS = scsBase->page0.NS;
          scsBase->page0.NS = ++local.NS;
          scsBase->page0.heartbeat = local.scsHeartbeat++;
-         if (debugLevel > 0)
+         if (debugLevel == DEBUG_RESERVED1)
          {
             epicsPrintf("SCS sending NS = %ld, local.hb=%ld\n",
                     lastNS, local.scsHeartbeat);
@@ -2550,7 +2553,7 @@ void scsReceive (void)
          }
          else
          {
-             if (debugLevel > DEBUG_RESERVED1)
+             if (debugLevel >= DEBUG_MED)
              {
                  sprintf(errBuff, "checksum calc = %lx, received = %lx\n", 
                          simCheck, localStatusBlock.checksum);

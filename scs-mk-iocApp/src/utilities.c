@@ -326,7 +326,7 @@ int tcs2m2 (location *position)
 
     /* if debugging, dump some values */
 
-    if ((debugLevel > DEBUG_MIN) & (debugLevel <= DEBUG_MED))
+    if ((debugLevel > DEBUG_MED) & (debugLevel <= DEBUG_RESERVED1))
     { 
         printf ("debugLevel is %d\n", debugLevel);
 
@@ -415,7 +415,7 @@ int m22tcs (location *position)
 
     /* if debugging, dump some values */
 
-    if ((debugLevel > DEBUG_MIN) & (debugLevel <= DEBUG_MED))
+    if ((debugLevel > DEBUG_MED) & (debugLevel <= DEBUG_RESERVED1))
     { 
         printf ("debugLevel is %d\n", debugLevel);
 

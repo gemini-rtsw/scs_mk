@@ -64,5 +64,6 @@ long CADfocusPidControl(struct cadRecord* pcad);
 extern char *periscopeOption[];
 extern char *cenBaffle[];
 extern char *depBaffle[];
+extern int checkBaffleFlag;
 
 #endif
