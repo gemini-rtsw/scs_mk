@@ -73,8 +73,8 @@
 #include <subRecord.h>
 #endif
 
-#define SCSTOP "top = m2:"
-#define INSTTOP "I = m2:inst:"
+// #define SCSTOP "top = m2:"
+// #define INSTTOP "I = m2:inst:"
 
 static int loggingEnable = ON;
 
@@ -964,34 +964,41 @@ long readHealth(struct genSubRecord *pgsub)
     return(OK);
 }   
 
-/* why aren't these being loaded in the startup script? */
+/* These are loaded here instead of in the startup script so
+ * that an init will reload them.
+ */
+
 int loadInitFiles(void*p)
 {
+
+#define XSTR(s) STR(s)
+#define STR(s) #s
+
    for(;;)
    {
       epicsEventMustWait(doPvLoad);
 
       errlogPrintf("pvload initialisation data\n");
 
-      if(pvload("./data/SCSinit.dat", SCSTOP, 0, 0) != OK)
-         errlogPrintf("pvload error SCSinit.dat\n");
+      if(pvload(XSTR(CFGLOCAL) "/SCSinit.pv", "top=" XSTR(CFGTOP) ":", 0, 0) != OK)
+         errlogPrintf("pvload error SCSinit.pv\n");
       else
-         errlogPrintf("pvload SCSinit.dat\n");
+         errlogPrintf("pvload SCSinit.pv\n");
                 
-      if(pvload("./data/xforms.dat", SCSTOP, 0, 0) != OK)
-         errlogPrintf("pvload error xforms.dat\n");
+      if(pvload(XSTR(CFGLOCAL) "/xforms.pv", "top=" XSTR(CFGTOP) ":", 0, 0) != OK)
+         errlogPrintf("pvload error xforms.pv\n");
       else
-         errlogPrintf("pvload xforms.dat\n");
+         errlogPrintf("pvload xforms.pv\n");
 
-      if(pvload("./data/limits.dat", SCSTOP, 0, 0) != OK)
-         errlogPrintf("pvload error limits.dat\n");
+      if(pvload(XSTR(CFGLOCAL) "/limits.pv", "top=" XSTR(CFGTOP) ":", 0, 0) != OK)
+         errlogPrintf("pvload error limits.pv\n");
       else
-         errlogPrintf("pvload limits.dat\n");
+         errlogPrintf("pvload limits.pv\n");
 
-      if(pvload("./data/instConfig.dat", INSTTOP, 0, 0) != OK)
-         errlogPrintf("pvload error instConfig.dat\n");
+      if(pvload(XSTR(CFGLOCAL) "/instConfig.pv", "I=" XSTR(CFGTOP) ":inst:", 0, 0) != OK)
+         errlogPrintf("pvload error instConfig.pv\n");
       else
-         errlogPrintf("pvload instConfig.dat\n");
+         errlogPrintf("pvload instConfig.pv\n");
 
       //epicsEventSignal(pvLoadComplete);
       loadComplete = 1;

@@ -16,11 +16,23 @@
 #   continue building anyway if conflicts are found.
 CHECK_RELEASE = YES
 
+CNFG_LOCAL = /rtconfig
+CNFG_SERVER = 10.2.71.11
+CNFG_REMOTE = /gem_sw/etc/rtconfig
+CNFG_TOP = m2
+
+USR_BOOT_FLAGS += -MCFGLOCAL=$(CNFG_LOCAL)
+USR_BOOT_FLAGS += -MCFGSERVER=$(CNFG_SERVER)
+USR_BOOT_FLAGS += -MCFGREMOTE=$(CNFG_REMOTE)
+
+USR_CFLAGS += -DCFGTOP=$(CNFG_TOP) -DCFGLOCAL=$(CNFG_LOCAL)/scs
 
 # Set this when you only want to compile this application
 #   for a subset of the cross-compiled target architectures
 #   that Base is built for.
 #CROSS_COMPILER_TARGET_ARCHS = vxWorks-68040
+
+CROSS_COMPILER_TARGET_ARCHS = RTEMS-mvme3100 RTEMS-mvme2307 RTEMS-beatnik
 
 # To install files into a location other than $(TOP) define
 #   INSTALL_LOCATION here.

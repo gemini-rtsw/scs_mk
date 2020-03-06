@@ -2,6 +2,8 @@ $(LINUX_ONLY)#!${INSTALL}/bin/${ARCH}/scs-mk-ioc
 
 cd ${INSTALL}
 
+nfsMount("$(CFGSERVER)","$(CFGREMOTE)","$(CFGLOCAL)")
+
 epicsEnvSet "IOCSH_PS1" "scs-mk-ioc>"
 #epicsEnvSet "EPICS_CA_ADDR_LIST" "10.1.2.175"
 #epicsEnvSet "EPICS_CA_AUTO_ADDR_LIST" "NO"

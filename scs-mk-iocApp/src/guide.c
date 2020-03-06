@@ -1762,6 +1762,8 @@ static int readFilters (MATLAB * testFilter, int type, double freq1, double freq
           return (ERROR);
      }
 
+     printf("Reading filter file %s\n", filename);
+
      if ((fptr = fopen (filename, "rb")) == NULL)
      {
           errorLog ("readFilters - Unable to open filter coefficients file", 1, ON);
