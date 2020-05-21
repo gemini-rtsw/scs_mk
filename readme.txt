@@ -1,5 +1,9 @@
 
 
+
+
+telnet 10.1.5.85 2305
+
 # Boot test version on sim5.
 configure-ioc -t work   \
    -b /gem_sw/test/tcumming/ioc/scs/mk/bin/RTEMS-mvme3100/scs-mk-ioc.boot    \
@@ -50,4 +54,8 @@ BOOTP/RARP Request Control: Always/When-Needed (A/W)=W?
 BOOTP/RARP Reply Update Control: Yes/No (Y/N)       =Y? 
 
 Update Non-Volatile RAM (Y/N)? Y
+
+
+# Release new version.
+gem-release.py -i -m "Added dynamic config, moved to epics.8" scs/mk 4-5
 
