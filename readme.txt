@@ -29,6 +29,11 @@ configure-ioc -t prod   \
    -s /gem_sw/prod/R3.14.12.7/ioc/scs/mk/4-4baffle_diagsBR5/bin/RTEMS-mvme2307/stscs-mk-ioc.boot \
    scs-mk-ioc
 
+configure-ioc -t prod   \
+   -b /gem_sw/prod/R3.14.12.8/ioc/scs/mk/4-5/bin/RTEMS-mvme2307/scs-mk-ioc.boot    \
+   -s /gem_sw/prod/R3.14.12.8/ioc/scs/mk/4-5/bin/RTEMS-mvme2307/stscs-mk-ioc.boot  \
+   scs-mk-ioc
+
 
 # Update boot parms to switch to epics.8 lv2 server.
 PPC1-Bug>niot
