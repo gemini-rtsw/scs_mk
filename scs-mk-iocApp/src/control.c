@@ -80,7 +80,9 @@
 #include <timeLib.h>    /* For timeNow */
 #include <vmi5588.h>    /* For rmIntSend */
 #include <drvXy240.h>   /* for xy240_writePortBit() */
+#include <iocsh.h>
 #include <epicsExport.h>
+#include <registryFunction.h>
 
 #include "utilities.h"  /* For debugLevel, ag2m2 */
 //#include "archive.h"    /* For refMemFree */
@@ -978,7 +980,7 @@ static int procGuideCount8 = 0;
 static int procGuideCount9 = 0;
 static int procGuideCount10 = 0;
 static int showTimeProfile = 0;
-const static char* TIMEFMT = "%H:%M:%S.%06f";
+//const static char* TIMEFMT = "%H:%M:%S.%06f";
 
 epicsTimeStamp tnowTx, tnowRx;
 char timebuf[32];
@@ -3212,7 +3214,7 @@ int saveCb ()
 
 /****
  *
- *
+ * Public functions exported to the shell
  */
 void phasorShowX() {
 
@@ -3410,6 +3412,53 @@ int checkGuideModeChange( long mode) {
    return(OK);
 }
 
+/****Export phasorShow****/
+static const iocshArg phasorShowArg0 = {"phasor axis use <0=X|1=Y>", iocshArgInt };
+static const iocshArg *phasorShowArgs[] = {&phasorShowArg0};
+
+static const iocshFuncDef phasorShowFuncDef ={"phasorShow", 1, phasorShowArgs};
+static void phasorShowCallFunc(const iocshArgBuf *args)
+{
+    switch (args[0].ival) {
+        case 0:
+            phasorShowX();
+            break;
+        case 1:
+            phasorShowY();
+            break;
+        default:
+            errlogPrintf("phasorShow <axis> #use 0=x or 1=y");
+            break;
+    }
+}
+
+/****Export vtkShow****/
+static const iocshArg vtkShowArg0 = {"VTK axis use <0=X|1=Y>", iocshArgInt };
+static const iocshArg *vtkShowArgs[] = {&vtkShowArg0};
+
+static const iocshFuncDef vtkShowFuncDef ={"vtkShow", 1, vtkShowArgs};
+static void vtkShowCallFunc(const iocshArgBuf *args)
+{
+    switch (args[0].ival) {
+        case 0:
+            vtkShowX();
+            break;
+        case 1:
+            vtkShowY();
+            break;
+        default:
+            errlogPrintf("vtkShow <axis> #use 0=x or 1=y");
+            break;
+    }
+}
+
+static void controlRegisterCommands(void)
+{
+    iocshRegister(&vtkShowFuncDef, vtkShowCallFunc);
+    iocshRegister(&phasorShowFuncDef, phasorShowCallFunc);
+}
+
+epicsExportRegistrar(controlRegisterCommands);
 epicsExportAddress(int, procGuideCount1 );
 epicsExportAddress(int, procGuideCount2 );
 epicsExportAddress(int, procGuideCount3 );
