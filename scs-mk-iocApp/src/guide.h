@@ -70,14 +70,14 @@ enum
   GYRO
 };
 
-enum
+typedef enum
 {
     GUIDE_200_HZ = 200,
     GUIDE_100_HZ = 100,
     GUIDE_50_HZ = 50,
     GUIDE_25_HZ = 25,
     GUIDE_20_HZ = 20
-};
+} GuideRate;
 
 
 /* Processing available to guide sources */
@@ -134,7 +134,7 @@ typedef struct
 typedef struct
 {
     double sensedRate;
-    long rate;
+    GuideRate rate;
     double vtkXdata[3]; /*vtk gain, scale and actual sampleRate (198.9Hz, 99.5Hz or 49.5Hz)*/
     double vtkYdata[3]; /*vtk gain, scale and actual sampleRate (198.9Hz, 99.5Hz or 49.5Hz)*/
 } GuideInfo;

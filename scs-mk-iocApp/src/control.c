@@ -946,7 +946,7 @@ void rmISR3 (int node)
 /* ===================================================================== */
 
 int rxwaitticks = 0;
-int useDynamicVtk =0;
+static int useDynamicVtk = 0;
 
 static double waittime = 0.1; 
 static double waittime2 = 0.5;   
@@ -983,6 +983,11 @@ static int showTimeProfile = 0;
 //const static char* TIMEFMT = "%H:%M:%S.%06f";
 
 epicsTimeStamp tnowTx, tnowRx;
+epicsTimeStamp tnowProcStart, tnowProcEnd;
+epicsTimeStamp tnowVtkApply;
+static double procRtt = 0.0;
+static double procVtkRtt = 0.0;
+
 char timebuf[32];
 
 void processGuides (void) 
@@ -993,7 +998,7 @@ void processGuides (void)
    int indx = 0;
    long lastNS = 0;
 
-   long sensedGuideRate = GUIDE_200_HZ;
+   static GuideRate guideRate = GUIDE_200_HZ;
 
    static struct
    {
@@ -1008,9 +1013,6 @@ void processGuides (void)
 
    /* Used to time stamp a set of data written to the ring buffers */
    double cbTimeStamp;
-
-   double tsdiff=0.0;
-   static double tsold=0.0;
 
    /* Initialize Vibration Tracking*/
    phasorInit(&phasorX);
@@ -1062,10 +1064,13 @@ void processGuides (void)
        * as long as the rate the TCS sends at 20 Hz = 20 x per sec = 0.05 s 
        */
 
+       /* Dec, 2021. Implement Multifrequency VTK Modes. Measure timestamp procStart */
+       epicsTimeGetCurrent(&tnowProcStart);
 
       if (epicsEventWaitWithTimeout(guideUpdateNow, waittime) == epicsEventWaitOK) 
          /* then ISR has given sem or it has never been taken */
       {
+
          //
          //
          //  ******REMOVED DELAY HERE AFTER PORT TO RTEMS*********
@@ -1511,7 +1516,7 @@ void processGuides (void)
          if (guideUpdate == TRUE) /* a new guide update has arrived */
          {
 
-            procGuideCount5++; /*5*/
+             procGuideCount5++; /*5*/
             if (guideType == AUTOGUIDE)
             {
                /* Not used by M2, so not part of the checksum
@@ -1523,6 +1528,10 @@ void processGuides (void)
                scsBase->page0.rawYGuide = (float)yNetGuide;
                scsBase->page0.rawZGuide = (float)zNetGuide;
 
+
+               /*Measure timestamp end */
+               epicsTimeGetCurrent(&tnowVtkApply);
+               procVtkRtt = epicsTimeDiffInSeconds(&tnowVtkApply, &tnowProcStart);
 
 
                /* Apply the PID loop if PidOn vars are set.
@@ -1913,29 +1922,17 @@ void processGuides (void)
          cbCounter = 0;
       }
 
-      /*
-       *TODO: Check rounding implemention below.
-       *      Just use RTEMS/BSP implementation now since we're off VxWorks.
-       *
-       *      Matt, Mike, Ignacio
-       *
-       *      Check the sensedGuideRate carefully as the 
-       *      Guiding system dynamics can change dramatically
-       *      if this is incorrect.
-       *
-       */
-
-      tsdiff = cbTimeStamp - tsold;
-      tsold = cbTimeStamp;
-      guideInfo.sensedRate = 1/(double)tsdiff;
-      sensedGuideRate = myround_nearest10((long)guideInfo.sensedRate);
+      /*Measure timestamp end */
+      epicsTimeGetCurrent(&tnowProcEnd);
+      procRtt = epicsTimeDiffInSeconds(&tnowProcEnd, &tnowProcStart);
+      guideInfo.sensedRate = 1/procRtt;
+      guideRate = (GuideRate)(int) guideInfo.sensedRate;
 
       /*Have we changed guide modes?
-       *
        * Set VTK system gain and phase accordingly.
        * */
-      if (useDynamicVtk && checkGuideModeChange(sensedGuideRate) != ERROR) 
-         guideInfo.rate = sensedGuideRate;
+      if (useDynamicVtk && checkGuideModeChange(guideRate) != ERROR) 
+         guideInfo.rate = guideRate;
 
       procGuideCount10++; /*10*/
    } /* end for(;;) FOREVER*/
@@ -3325,16 +3322,14 @@ Phasor* getPhasorY(void) {
 }
 
 long srmisscount;
-int checkGuideModeChange( long mode) {
-
-   static int currentmode = GUIDE_200_HZ; /*default mode is 200 Hz*/
+int checkGuideModeChange( GuideRate newrate) {
 
    /*Only change if new mode is different*/
-   if(mode == currentmode) {
+   if(newrate == guideInfo.rate) {
       return(ERROR);
    }
 
-   switch (mode) {
+   switch (newrate) {
       case GUIDE_200_HZ:
          vtkX.Fs = 198.9; 
          vtkX.scale = 1.758;
@@ -3408,7 +3403,7 @@ int checkGuideModeChange( long mode) {
    vtkInit(&vtkX);
    vtkInit(&vtkY);
 
-   currentmode = mode;
+   guideInfo.rate = newrate;
    return(OK);
 }
 
@@ -3485,6 +3480,9 @@ epicsExportAddress(int, sendpulse );
 epicsExportAddress(int, simLevel );
 epicsExportAddress(int, interlockFlag );
 epicsExportAddress(int,  refmem_mon1);
+epicsExportAddress(double, procVtkRtt );
+epicsExportAddress(double, procRtt );
+epicsExportAddress(int, useDynamicVtk );
 epicsExportAddress(double, waittime );
 epicsExportAddress(double, waittime2 );
 epicsExportAddress(int, mutex1 );

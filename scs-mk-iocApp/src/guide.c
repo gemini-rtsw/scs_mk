@@ -153,7 +153,7 @@ static double dfilter(double newSample, int Id);
 
 anUpdateInterval updateInterval = { 0.0, 0.0, 0.0, 0.0  };
 
-GuideInfo guideInfo = { 0.0, 0, {1.557,-9.7, 198.9}, {1.557,-9.7, 198.9}};
+GuideInfo guideInfo = { 0.0, GUIDE_200_HZ, {1.557,-9.7, 198.9}, {1.557,-9.7, 198.9}};
 
 long guideOn;
 long guideSimOn;
@@ -2134,7 +2134,7 @@ long highSpeed2 (struct genSubRecord *pgsub) {
 
     sbRttHS[hs2count] = sbStatus->rtt;              /* next value on array*/
     *(double *) pgsub->valb = sbStatus->rtt;        /* scalar of same rtt*/
-    *(double *) pgsub->valc = sbStatus->nsnrDiff;   /* num sent - num received*/
+    *(double *) pgsub->valc = guideInfo.sensedRate;   /* Sensed Guide Rate*/
 
 
     if (hs2subcount == 0 ) {

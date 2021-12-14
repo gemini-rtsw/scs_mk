@@ -476,7 +476,6 @@ Phasor* getPhasorX(void);
 Phasor* getPhasorY(void);
 void setPhasorX(Phasor *phasorx);
 void setPhasorY(Phasor *phasory);
-int checkGuideModeChange( long mode);
 
 #define VTK_SR_LOW 25.0
 #define VTK_SR_HIGH 200.0

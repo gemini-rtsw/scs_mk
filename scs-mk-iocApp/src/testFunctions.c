@@ -95,6 +95,7 @@ int stopGuideSim = 0;     /* Stop the guide simulation task*/
 int freeRunGuideSim = 0;  /* When true, this calls rmISR3(3) to pretend to be P2*/
 double xTiltGuideSimScale = 0.0;
 double yTiltGuideSimScale = 0.0;
+int trig1 = 0;
 
 epicsThreadId guideSimTaskId = 0;  /* The taskId of the guideSimulation task */
 
@@ -1309,7 +1310,7 @@ void fillWfs(void *p)
       scsBase->pwfs2.err2 = phasor.command * 0.2;
       scsBase->pwfs2.err3 = phasor.command * 0.2;
 */
-      scsBase->pwfs2.z3 = 0.0;
+      scsBase->pwfs2.z1 = 0.001;
       scsBase->pwfs2.time = value++;
       scsBase->pwfs2.interval += (float)(gInterval);
 
@@ -1330,6 +1331,7 @@ void fillWfs(void *p)
        *    guideSimDelayTicks = 2; ==> 10ms delay
        * */
       epicsThreadSleep(guideSimDelay);
+      trig1++;
    }
 
    /* thread is deletped when it terminates */
@@ -1845,3 +1847,4 @@ epicsRegisterFunction(guideSimProc);
 epicsRegisterFunction(pulseSteerCAD);
 epicsRegisterFunction(CADfreeRun);
 epicsRegisterFunction(CADguideSimCont);
+epicsExportAddress(int, trig1 );

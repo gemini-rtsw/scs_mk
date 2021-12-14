@@ -137,6 +137,9 @@ variable( sendpulse, int)
 variable( showcs, int)
 variable( waittime, double)
 variable( waittime2, double)
+variable( procVtkRtt, double)
+variable( procRtt, double)
+variable( useDynamicVtk, int)
 variable( simLevel, int)
 variable( refmem_mon1, int)
 
@@ -160,6 +163,7 @@ variable( mutex17, int)
 variable( mutex18, int)
 variable( mutex19, int)
 variable( mutex20, int)
+variable( trig1, int)
 
 
 #variable( xDemandPg0, double)

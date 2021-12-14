@@ -30,7 +30,7 @@ USR_CFLAGS += -DCFGTOP=$(CNFG_TOP) -DCFGLOCAL=$(CNFG_LOCAL)/scs
 # Set this when you only want to compile this application
 #   for a subset of the cross-compiled target architectures
 #   that Base is built for.
-#CROSS_COMPILER_TARGET_ARCHS = vxWorks-68040
+CROSS_COMPILER_TARGET_ARCHS = mvme-2307 beatnik
 
 CROSS_COMPILER_TARGET_ARCHS = RTEMS-mvme3100 RTEMS-mvme2307 RTEMS-beatnik
 

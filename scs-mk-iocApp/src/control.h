@@ -585,6 +585,7 @@ extern long phasorXApply;
 extern double xTiltGuideSimScale;
 extern double yTiltGuideSimScale;
 extern long phasorYApply;
+int checkGuideModeChange( GuideRate newrate);
 
 void vtkResetX(void);
 void vtkResetY(void);
