@@ -987,6 +987,8 @@ epicsTimeStamp tnowProcStart, tnowProcEnd;
 epicsTimeStamp tnowVtkApply;
 static double procRtt = 0.0;
 static double procVtkRtt = 0.0;
+static long srmisscount = 0;
+static GuideRate guideRate = GUIDE_200_HZ;
 
 char timebuf[32];
 
@@ -997,8 +999,6 @@ void processGuides (void)
    converted   result = {0,0,0};
    int indx = 0;
    long lastNS = 0;
-
-   static GuideRate guideRate = GUIDE_200_HZ;
 
    static struct
    {
@@ -1931,8 +1931,17 @@ void processGuides (void)
       /*Have we changed guide modes?
        * Set VTK system gain and phase accordingly.
        * */
-      if (useDynamicVtk && checkGuideModeChange(guideRate) != ERROR) 
-         guideInfo.rate = guideRate;
+      if (useDynamicVtk) {
+          if (checkGuideModeChange(guideRate) != ERROR) {
+
+              //Rate change
+              guideInfo.rate = guideRate;
+          }
+          else {
+              useDynamicVtk = 0;
+              epicsPrintf("GuideModeChange: %d", guideRate);
+          }
+      }
 
       procGuideCount10++; /*10*/
    } /* end for(;;) FOREVER*/
@@ -3321,7 +3330,6 @@ Phasor* getPhasorY(void) {
    return &phasorY;
 }
 
-long srmisscount;
 int checkGuideModeChange( GuideRate newrate) {
 
    /*Only change if new mode is different*/
@@ -3339,6 +3347,7 @@ int checkGuideModeChange( GuideRate newrate) {
          vtkY.scale = 1.758;
          vtkY.angle = -15.9;
 
+         srmisscount = 0;
          break;
 
       case GUIDE_100_HZ:    
@@ -3350,6 +3359,7 @@ int checkGuideModeChange( GuideRate newrate) {
          vtkY.scale = 1.591;
          vtkY.angle = 15.3;
 
+         srmisscount = 0;
          break;
 
       case GUIDE_50_HZ:    
@@ -3361,6 +3371,8 @@ int checkGuideModeChange( GuideRate newrate) {
          vtkY.Fs = 49.8; 
          vtkY.scale = 1.637;
          vtkY.angle = 47.1;
+
+         srmisscount = 0;
          break;
 
       case GUIDE_20_HZ:    
@@ -3373,6 +3385,7 @@ int checkGuideModeChange( GuideRate newrate) {
          vtkY.scale = 1.758;
          vtkY.angle = -15.9;
 
+         srmisscount = 0;
          break;
 
       default:
@@ -3482,6 +3495,8 @@ epicsExportAddress(int, interlockFlag );
 epicsExportAddress(int,  refmem_mon1);
 epicsExportAddress(double, procVtkRtt );
 epicsExportAddress(double, procRtt );
+epicsExportAddress(int, guideRate );
+epicsExportAddress(int, srmisscount );
 epicsExportAddress(int, useDynamicVtk );
 epicsExportAddress(double, waittime );
 epicsExportAddress(double, waittime2 );
