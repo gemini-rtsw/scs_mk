@@ -819,6 +819,44 @@ long CADguideConfig (struct cadRecord * pcad)
      return (status);
 }
 
+
+/**
+ * Test TCS updates for WFS Exptime
+ */
+long CADtcsExp (struct cadRecord * pcad) {
+
+    long status = CAD_REJECT;
+    static double exptime = 0.0;
+    static int source;
+
+    switch (pcad->dir)
+    {
+        case menuDirectiveMARK:
+            status = CAD_ACCEPT ;
+            break;
+
+        case menuDirectiveCLEAR:
+            status = CAD_ACCEPT ;
+            break;
+
+        case menuDirectivePRESET:
+
+            status = CAD_ACCEPT ;
+
+            /* if all parameters are within limits, copy to outputs */
+
+            *(double *)pcad->vala   = exptime;
+            *(long *)pcad->valb     = source;
+            break;
+
+        default:
+            epicsPrintf("Exptime called\n");
+            break;
+    }
+
+     return (status);
+}
+
 /* ===================================================================== */
 /* INDENT OFF */
 /*
@@ -2709,6 +2747,7 @@ epicsRegisterFunction(CADclearGuideFocus);
 epicsRegisterFunction(CADclearTiltGuide);
 epicsRegisterFunction(CADguideControl);
 epicsRegisterFunction(CADguideConfig);
+epicsRegisterFunction(CADtcsExp);
 epicsRegisterFunction(CADguideReset);
 
 epicsExportAddress(int, mutex13);
