@@ -66,7 +66,7 @@ w 1296 2083 100 0 n#57 ecad20.guideConfig.OUTD 1088 2080 1504 2080 egenSub.guide
 w 1296 2147 100 0 n#58 ecad20.guideConfig.OUTC 1088 2144 1504 2144 egenSub.guideConfigProc.C
 w 1296 2211 100 0 n#59 ecad20.guideConfig.OUTB 1088 2208 1504 2208 egenSub.guideConfigProc.B
 w 1296 2275 100 0 n#60 ecad20.guideConfig.OUTA 1088 2272 1504 2272 egenSub.guideConfigProc.A
-w 1818 -86 -100 0 n#61 hwout.hwout#365.outp 1808 -96 1808 -96 egenSub.guideConfResetProc.OUTJ
+w 1811 -93 100 0 n#61 hwout.hwout#365.outp 1808 -96 1808 -96 egenSub.guideConfResetProc.OUTJ
 s 5104 -1472 100 0 Secondary Control System
 s 5104 -1536 100 0 Guide Commands
 s 5584 -1744 100 0 1
@@ -342,4 +342,14 @@ p 240 2512 100 0 -1 name:$(top)source
 p 448 2416 75 768 -1 pproc(OUT):NPP
 use lookup 224 2631 100 0 lookup#202
 xform 0 392 2832
+use ecad2 -200 808 100 0 exposuretime
+xform 0 -112 1136
+p -197 774 100 0 1 PV:$(top)
+p -176 848 100 0 1 SNAM:CADtcsExp
+p -176 1136 100 0 1 FTVA:DOUBLE
+p -176 1104 100 0 1 FTVB:LONG
+p -322 1166 75 1024 -1 pproc(INPA):CA
+p -302 1165 75 1024 -1 palrm(INPA):MS
+p -715 794 100 0 -1 typ(INPA):path
+p -528 1162 75 0 -1 def(INPA):tcs:pwfs1ObserveexpTime
 [comments]
