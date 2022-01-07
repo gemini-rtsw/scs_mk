@@ -2503,7 +2503,12 @@ ss CADprocessor {
        * mechanism is first in position
        */
 
-      when(delay(10.0) && (servoInPosition == 1) && ( XYmovingStatus == 0 ))
+      /* 
+       * mrippa: 20220106
+       * Hotfix for ocs.hi.gemini.edu/browse/FR-72447
+       * Remove the requirement for (XYMovingStatus == 0) to be complete.
+      */
+      when(delay(10.0) && (servoInPosition == 1))
       {
          cadProcessorState = MOVEWAITFORCOINCIDENCE;
          pvPut(cadProcessorState);
