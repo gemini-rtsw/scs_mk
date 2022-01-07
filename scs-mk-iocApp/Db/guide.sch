@@ -342,14 +342,14 @@ p 240 2512 100 0 -1 name:$(top)source
 p 448 2416 75 768 -1 pproc(OUT):NPP
 use lookup 224 2631 100 0 lookup#202
 xform 0 392 2832
-use ecad2 -200 808 100 0 exposuretime
-xform 0 -112 1136
-p -197 774 100 0 1 PV:$(top)
-p -176 848 100 0 1 SNAM:CADtcsExp
-p -176 1136 100 0 1 FTVA:DOUBLE
-p -176 1104 100 0 1 FTVB:LONG
-p -322 1166 75 1024 -1 pproc(INPA):CA
-p -302 1165 75 1024 -1 palrm(INPA):MS
-p -715 794 100 0 -1 typ(INPA):path
-p -528 1162 75 0 -1 def(INPA):tcs:pwfs1ObserveexpTime
+use ecad2 4000 2352 100 0 exposuretime
+xform 0 4088 2680
+p 4003 2318 100 0 1 PV:$(top)
+p 4036 2600 100 0 1 SNAM:CADtcsExp
+p 4024 2680 100 0 1 FTVA:DOUBLE
+p 4024 2648 100 0 1 FTVB:LONG
+p 3851 2711 75 1024 -1 pproc(INPA):CPP
+p 3898 2709 75 1024 -1 palrm(INPA):MS
+p 3485 2338 100 0 0 typ(INPA):path
+p 3672 2706 75 0 -1 def(INPA):tcs:pwfs1ObserveexpTime
 [comments]
