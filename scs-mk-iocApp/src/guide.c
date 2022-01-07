@@ -850,7 +850,7 @@ long CADtcsExp (struct cadRecord * pcad) {
             break;
 
         default:
-            epicsPrintf("Exptime called\n");
+            epicsPrintf("Exptime called with exptime %lf from WFS %d\n", exptime, source);
             break;
     }
 
