@@ -44,3 +44,10 @@ CROSS_COMPILER_TARGET_ARCHS = RTEMS-mvme3100 RTEMS-mvme2307 RTEMS-beatnik
 # You must rebuild in the iocBoot directory for this to
 #   take effect.
 #IOCS_APPL_TOP = </IOC/path/to/application/top>
+
+# These allow developers to override the CONFIG_SITE variable
+# settings without having to modify the configure/CONFIG_SITE
+# file itself.
+-include $(TOP)/../CONFIG_SITE.local
+-include $(TOP)/../configure/CONFIG_SITE.local
+-include $(TOP)/configure/CONFIG_SITE.local

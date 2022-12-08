@@ -8,7 +8,7 @@ include $(TOP)/configure/CONFIG
 #=============================
 # Build the IOC application
 
-USR_CFLAGS += -DMK
+#USR_CFLAGS += -DMK
 
 PROD_IOC_RTEMS = scs-mk-ioc
 # scs-mk-ioc.dbd will be created and installed
@@ -16,17 +16,17 @@ DBD += scs-mk-ioc.dbd
 
 # scs-mk-ioc.dbd will be made up from these files:
 scs-mk-ioc_DBD += base.dbd
-scs-mk-ioc_DBD += iocAdmin.dbd
+# scs-mk-ioc_DBD += iocAdmin.dbd
 scs-mk-ioc_DBD += menuScan.dbd
 scs-mk-ioc_DBD += geminiRecords.dbd
-scs-mk-ioc_DBD += vmi5588.dbd
-scs-mk-ioc_DBD += xy240.dbd
-scs-mk-ioc_DBD += tcslib.dbd
-scs-mk-ioc_DBD += bancomm.dbd
+# scs-mk-ioc_DBD += vmi5588Supp.dbd
+scs-mk-ioc_DBD += xy240Supp.dbd
+scs-mk-ioc_DBD += tcslibSupp.dbd
+scs-mk-ioc_DBD += bancommDev.dbd
 scs-mk-ioc_DBD += pvload.dbd
-scs-mk-ioc_DBD += timelib.dbd
+scs-mk-ioc_DBD += timelibSupp.dbd
 scs-mk-ioc_DBD += slalib.dbd
-scs-mk-ioc_DBD += timeProbe.dbd
+scs-mk-ioc_DBD += timeProbeSupp.dbd
 scs-mk-ioc_DBD += listAlarmRecords.dbd
 scs-mk-ioc_DBD += systemTickTools.dbd
 scs-mk-ioc_DBD += initTrace.dbd
@@ -75,7 +75,7 @@ scs-mk-ioc_LIBS += pvload
 scs-mk-ioc_LIBS += tcslib
 scs-mk-ioc_LIBS += timelib
 scs-mk-ioc_LIBS += slalib
-scs-mk-ioc_LIBS += devIocStats 
+# scs-mk-ioc_LIBS += devIocStats 
 scs-mk-ioc_LIBS += timeProbe 
 scs-mk-ioc_LIBS += listAlarmRecords 
 scs-mk-ioc_LIBS += systemTickTools 
