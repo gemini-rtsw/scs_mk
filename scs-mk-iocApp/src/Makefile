@@ -17,9 +17,9 @@ DBD += scs-mk-ioc.dbd
 # scs-mk-ioc.dbd will be made up from these files:
 scs-mk-ioc_DBD += base.dbd
 # scs-mk-ioc_DBD += iocAdmin.dbd
-scs-mk-ioc_DBD += menuScan.dbd
+# scs-mk-ioc_DBD += menuScan.dbd
 scs-mk-ioc_DBD += geminiRecords.dbd
-# scs-mk-ioc_DBD += vmi5588Supp.dbd
+scs-mk-ioc_DBD += vmi5588Supp.dbd
 scs-mk-ioc_DBD += xy240Supp.dbd
 scs-mk-ioc_DBD += tcslibSupp.dbd
 scs-mk-ioc_DBD += bancommDev.dbd

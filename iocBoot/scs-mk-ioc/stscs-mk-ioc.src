@@ -1,6 +1,6 @@
 $(LINUX_ONLY)#!${INSTALL}/bin/${ARCH}/scs-mk-ioc
 
-cd $(INSTALL)
+cd ../..
 
 nfsMount("$(CFGSERVER)","$(CFGREMOTE)","$(CFGLOCAL)")
 
