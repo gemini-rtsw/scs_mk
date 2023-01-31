@@ -23,6 +23,9 @@ TEMPLATE_TOP=$(EPICS_BASE)/templates/makeBaseApp/top
 
 PRODSUP=/gem_base/epics/support
 
+# JHD: Local locations for SCS testing: 
+WORK_SUPP=/home/jed.diller/work/support
+
 TIMELIB=$(PRODSUP)/timelib
 SLALIB=$(PRODSUP)/slalib
 GEMREC=$(PRODSUP)/geminiRec
@@ -30,13 +33,13 @@ GEMUTIL=$(PRODSUP)/gemUtil
 TCSLIB=$(PRODSUP)/tcslib
 SNCSEQ=$(PRODSUP)/sequencer
 PVLOAD=$(PRODSUP)/pvload
-BANCOMM=$(PRODSUP)/bancomm
 # IOCSTATS=$(PRODSUP)/iocStats
-TIMEPROBE=$(PRODSUP)/timeProbe
-SYMB=$(PRODSUP)/symb
-VMIC=$(PRODSUP)/vmi5588
 XYCOM=$(PRODSUP)/xycom
+BANCOMM=$(PRODSUP)/bancomm
 
+TIMEPROBE=$(WORK_SUPP)/timeprobe
+SYMB=$(WORK_SUPP)/symb
+VMIC=$(WORK_SUPP)/vmi5588
 
 # EPICS_BASE usually appears last so other apps can override stuff:
 EPICS_BASE=/gem_base/epics/epics-base
