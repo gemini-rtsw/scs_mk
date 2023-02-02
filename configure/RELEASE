@@ -23,9 +23,6 @@ TEMPLATE_TOP=$(EPICS_BASE)/templates/makeBaseApp/top
 
 PRODSUP=/gem_base/epics/support
 
-# JHD: Local locations for SCS testing: 
-WORK_SUPP=/home/jed.diller/work/support
-
 TIMELIB=$(PRODSUP)/timelib
 SLALIB=$(PRODSUP)/slalib
 GEMREC=$(PRODSUP)/geminiRec
@@ -36,6 +33,10 @@ PVLOAD=$(PRODSUP)/pvload
 # IOCSTATS=$(PRODSUP)/iocStats
 XYCOM=$(PRODSUP)/xycom
 BANCOMM=$(PRODSUP)/bancomm
+
+
+# JHD: Local locations for SCS testing: 
+WORK_SUPP=/home/jed.diller/work/support
 
 TIMEPROBE=$(WORK_SUPP)/timeprobe
 SYMB=$(WORK_SUPP)/symb
