@@ -1,0 +1,13 @@
+/configure/RELEASE.local
+/configure/CONFIG_SITE.local
+bin/
+configure/O.RTEMS-mvme2700/
+configure/O.linux-x86_64/
+data/
+db/
+dbd/
+lib/
+scs-mk-iocApp/src/O.Common/
+scs-mk-iocApp/src/O.RTEMS-mvme2700/
+scs-mk-iocApp/src/O.linux-x86_64/
+
