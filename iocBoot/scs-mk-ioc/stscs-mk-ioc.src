@@ -38,6 +38,9 @@ drvXy240ConfigOutputInit(1, 32, 0xd000, 0x0000, 0x0003)
 # initialise reflective memory
 drvVmi5588Config(0xA00000, 0x040000, 0xb0, 0x06)
 
+#ADDED THIS FROM THE CP START UP
+initSetParameters("/rtconfig/scs/",  "top=m2:, I=m2:inst:")
+
 # initialise system, first xycom (via chopInit), then then rest.
 # Note: scsInit spawns processGuides which writes to the xycom if compiled
 # with the USR C FLAG for TIME_LATENCY, so chopInit goes first.
