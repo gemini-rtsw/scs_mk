@@ -119,6 +119,7 @@
    %%#include "testFunctions.h"        /* For startGuideSim, endGuideSim */
    %%#include "interlock.h"        /* For startGuideSim, endGuideSim */
    %%#include <vmi5588.h>        /* For vmi5588_reboot */
+   %%#include <epicsThread.h>
 
 
    %%#include <stdlib.h>
@@ -126,7 +127,6 @@
    %%#include <math.h>
 
    %%#include <car.h>
-
    %%#define CMD_RESPONSE_TIMEOUT    13.0 /* command acknowledgement timeout in 
                                              units equal to ~0.33 seconds */
    %%#define INIT_COMPLETE_TIMEOUT 400.0 /* init execution timeout in units
@@ -148,8 +148,12 @@
    %%enum {NOT_COMPLETE, COMPLETE};
 
    %{
-
       /* declare globals */
+
+      int     argc;
+      char *argv[40];
+      char *cmd_argv;
+      char *cmds[40];
 
       /*
          char    *topEndNames[] =
@@ -194,7 +198,7 @@
       static double   xyDeadband;
 
       static long     myOldGuideSimState = 0;
-
+      int loadComplete;
    }%
 
 
@@ -474,8 +478,8 @@ assign rebootCarErrIn to "{T}rebootC.IERR";
 string rebootCarMessIn;             /* message input to     */
 assign rebootCarMessIn to "{T}rebootC.IMSS";    /* rebootC CAR      */
 
-int32_t rebootIocStat;                /* iocStats reboot */
-assign rebootIocStat to "{T}iocStats:SYSRESET";
+/* int32_t rebootIocStat; I/                /* iocStats reboot */
+/* assign rebootIocStat to "{T}iocStats:SYSRESET"; */
 
 
 /* ===================================================================== */
@@ -869,6 +873,11 @@ assign xyPosDeadband to "{T}tolerance.VALF";
 double tolDir;
 assign tolDir to "{T}tolerance.DIR";
 
+double guideConfReset;
+assign guideConfReset to "{T}guideConfigReset.DIR";
+
+double setCont;
+assign setCont to "{T}setController.DIR";
 
 /* ===================================================================== */
 
@@ -945,7 +954,7 @@ assign topEndSad to "{D}topEnd.VAL";
 string chopping;                        /* currently chopping (yes or no) */
 assign chopping to "{D}chopping.VAL";
 
-int32_t inPositionSad;                   /* in position (1=not in position, 0=in position) */
+string inPositionSad;                   /* in position (1=not in position, 0=in position) */
 assign inPositionSad to "{D}inPosition.VAL";
 
 string deployableSad;                   /* deployable baffle position (key as for demand) */
@@ -1923,12 +1932,24 @@ ss CADprocessor {
          /* Submit tolerance data to CEM prior to base move*/
          tolDir = 0;
          pvPut(tolDir);
-
          tolDir = 2;
          pvPut(tolDir);
-
          tolDir = 3;
          pvPut(tolDir);
+
+         setCont = 0;
+         pvPut(setCont);
+         setCont = 2;
+         pvPut(setCont);
+         setCont = 3;
+         pvPut(setCont);
+
+         guideConfReset = 0;
+         pvPut(guideConfReset);
+         guideConfReset = 2;
+         pvPut(guideConfReset);
+         guideConfReset = 3;
+         pvPut(guideConfReset);
 
       } state initCompleteStartMove
 
@@ -3892,12 +3913,7 @@ ss monitorSad {
    }
 
    state updateSad {
-      option +e;
-      entry{
-        errlogPrintf("updateSad: enter\n");
-      }
-
-      when(delay(2.0)) {
+      when(delay(3.0)) {
          monitorSadState = UPDATESAD; 
          pvPut(monitorSadState);
          
@@ -3906,9 +3922,9 @@ ss monitorSad {
 
             epicsMutexLock(refMemFree);
             if(scsPtr->page1.inPosition != 0 || followOn || guideOn)
-                inPositionSad = 1;
+               strncpy(inPositionSad, "TRUE", MAX_STRING_SIZE - 1);
             else
-                inPositionSad = 0;
+               strncpy(inPositionSad, "FALSE", MAX_STRING_SIZE - 1);
 
 
             /*strncpy(topEndSad, topEndNames[scsPtr->page1.topEnd], 
@@ -4040,54 +4056,8 @@ ss monitorSad {
             pvPut(zerr[source]);
          }   
 
-      }  state updateSad
-
-
-      /*
-        When checkBaffleFlag is TRUE, we expect "MOVING" state
-        in the deployableSad.
-      */
-
-      when(checkBaffleFlag) {
-      } state checkBaffle
-
-    }
-
-    state checkBaffle {
-
-      option +e;
-      option -t;
-
-      entry{
-        errlogPrintf("checkBaffle enter: dbafpos=%ld\n",scsPtr->page1.deployBaffle);
-      }
-
-      /* Turn off further checks if demand and actual agree.*/
-      when (scsPtr->page0.deployBaffle == scsPtr->page1.deployBaffle) {
-          checkBaffleFlag = 0;
-      } state updateSad
-
-      when (delay(4)) {
-          
-        /* Must be MOVING (-1)...If not moving send the command again*/
-        if ( scsPtr->page1.deployBaffle >= 0)  {
-
-            errlogPrintf("checkBaffle: Failed to move when commanded. Try again.\n");
-            writeCommand(BAFFLE_CHANGE);
-        }
-
-        /* Stop checking if MOVING is true*/
-        else {
-          checkBaffleFlag = 0;
-        }
-
-      } state updateSad
-      
-      exit {
-        errlogPrintf("checkBaffle exit: dbafpos=%ld\n",scsPtr->page1.deployBaffle);
-      }
-    }
-
+      }   state updateSad
+   }
 }
 
 /* ===================================================================== */
@@ -4252,99 +4222,22 @@ ss rebootScs {
           */
 
          /* NEW 16-Aug-2000 */
-         writeCommand(ACT_PWR_ON);
+         writeCommand(ACT_PWR_OFF);
          writeCommand(MEND);
          writeCommand(VEND);
          writeCommand(MOFFLON);
 
-         printf("startReboot - wait for mirror control to disable\n");
-      } state proceedWithRebootPark
-   }
-
-   state proceedWithRebootPark {
-      when(servoOnStat == 0) {
-         printf("mirror control disable - proceed with move\n");
-
-         myscsState = PARKED;
-         scsState = myscsState;
-         pvPut(myscsState);
-
-         /* write park demand conditions to the control loops */
-
-         parkPosition.xTilt  = xTiltAdef;
-         parkPosition.yTilt  = yTiltAdef;
-         parkPosition.zFocus = zFocusDef;
-         parkPosition.xPos   = xPosTcsDef;
-         parkPosition.yPos   = yPosTcsDef;
-
-         tcs2m2(&parkPosition);
-
-         %{
-         if(setPointFree) {
-            epicsMutexLock(setPointFree);
-            setPoint.xTiltA = parkPosition.xTiltNew;
-            setPoint.yTiltA = parkPosition.yTiltNew;
-            setPoint.zFocus = parkPosition.zFocusNew;
-            setPoint.xTiltB = parkPosition.xTiltNew;
-            setPoint.yTiltB = parkPosition.yTiltNew;
-            setPoint.xTiltC = parkPosition.xTiltNew;
-            setPoint.yTiltC = parkPosition.yTiltNew;
-            setPoint.xPosition = parkPosition.xPosNew;
-            setPoint.yPosition = parkPosition.yPosNew;
-
-            epicsMutexUnlock(setPointFree);
-         }
-         else {
-            errlogPrintf("proceedWithRebootPark - setPointFree timeout\n");
-         }
-         }%
-
-      } state rebootParkWaitForCoincidence
-
-
-      /* SCS has not detected that the mirror control have been turned off so
-       * aborts the move 
-       */
-      when(delay(SERVO_OFF_TIMEOUT))       {
-         cadProcessorState = SERVOOFFTIMEOUT;
-         pvPut(cadProcessorState);
-
-         printf("proceedWithRebootPark - Servo off timeout n");
-         errorLog
-            ("proceedWithRebootPark - M2 system not switching sevos off",
-             1, ON);
-
-         parkCarErrIn = STATUS_ERROR; /* parkCar or rebootCar ?? */
-         pvPut(parkCarErrIn);
-         strncpy(parkCarMessIn,
-               "M2 not switching mirror control off", MAX_STRING_SIZE - 1);
-         pvPut(parkCarMessIn);
-
+         printf("startReboot - wait for mirror control to disable ******* \n");
       } state rebootParkWaitForCoincidence 
-
-      /* bug fix 14nov2000 - this was 'idle' and we do not want this. If the
-       * servos will not turn off, keep going to the next state. Later: figure
-       * out why servos do not turn off sometimes. */
    }
 
    state rebootParkWaitForCoincidence {
       /* wait for system to achieve the desired position */
 
-      when(delay(3.0) && (servoInPosition == 1)) {
+      /* when(delay(3.0) && (servoInPosition == 1)) { */
+      when(delay(5.0)) {
          rebootScsState = WAITFORPARKREBOOT;
          pvPut(rebootScsState);
-
-         /* in close range - no need to restart mirror control */
-
-         /* shut down the unused functions */
-
-         writeCommand(VEND);
-         writeCommand(MEND);
-         writeCommand(MOFFLOFF);
-         writeCommand(ACT_PWR_OFF);
-
-         /* NEW for 22-jun-2000: */
-         /* Toggle tilt system by writing to the event system */
 
          if (eventConfig.change == 0) {
             /* if previous changes have been acknowledged, 
@@ -4362,51 +4255,10 @@ ss rebootScs {
             printf("waitForParkReboot - command not acknowledged\n");
          }
       }   state powerCycleCEM
-
-      when(delay(TIMEOUT)) {
-         rebootScsState = TIMEOUTWAITFORPARKREBOOT;
-         pvPut(rebootScsState);
-
-         parkCarErrIn = STATUS_ERROR;
-         pvPut(parkCarErrIn);
-
-         strncpy(parkCarMessIn, "No response to park command", MAX_STRING_SIZE - 1);
-         pvPut(parkCarMessIn);
-
-         parkCarIn = CAR_ERROR;
-         pvPut(parkCarIn);
-
-         /* shut down the unused functions */
-
-         writeCommand(VEND);
-         writeCommand(MEND);
-         writeCommand(MOFFLOFF);
-         writeCommand(ACT_PWR_OFF);
-
-         /* NEW for 22-jun-2000: */
-         /* Toggle tilt system by writing to the event system */
-
-         printf("state waitForParkReboot\n");
-         if (eventConfig.change == 0) {
-            /* if previous changes have been acknowledged, 
-               write new data, flag change and give sem  */
-
-            printf("waitForParkReboot - Shutting off CEM power\n");
-            eventConfig.change  = 1;
-            eventConfig.on = 0;    /* make sure you do not send an ON */
-            eventConfig.m2Servo = OFF;
-            eventConfig.m2Power = OFF;
-            epicsEventSignal(eventSem); 
-         }
-         else {
-            errorLog("waitForParkReboot - command not acknowledged", 1, ON);
-            printf("waitForParkReboot - command not acknowledged\n");
-         }
-      } state powerCycleCEM
    }
 
    state powerCycleCEM {
-      when(delay(1.0)) {
+      when(delay(5.0)) {
          printf("state powerCycleCEM\n");
          if (eventConfig.change == 0) {
             /* if previous changes have been acknowledged, 
@@ -4419,25 +4271,12 @@ ss rebootScs {
             eventConfig.m2Power = ON;
             epicsEventSignal(eventSem); 
          }
-         else {
-            errorLog("powerCycleCEM - command not acknowledged", 1, ON);
-            printf("waitForParkReboot - command not acknowledged\n");
-         }
-
-         /* send idle indication to the parkC record */
-
-         parkCarIn = CAR_IDLE;
-         pvPut(parkCarIn);
-
-         strncpy(parkCarMessIn, "", MAX_STRING_SIZE - 1);
-         pvPut(parkCarMessIn);
-
       }   state rebootNow
    }
 
 
    state rebootNow {
-      when(delay (5.0)) {
+      when(delay(3.0)) {
          rebootScsState = REBOOTNOW;
          pvPut(rebootScsState);
 
@@ -4463,15 +4302,16 @@ ss rebootScs {
      /*vmi5588_reboot(NULL);*/
 
          /* %%reboot(BOOT_QUICK_AUTOBOOT); */
-	 rebootIocStat = REBOOT_VALUE;
-	 pvPut(rebootIocStat);
-	 
+	 /* rebootIocStat = REBOOT_VALUE;
+	 pvPut(rebootIocStat); */
 
+         printf("rebootNow - Sendind shutdown command\n");
+         %%rebootVME(); 
          /* At this point the system shall reboot so no further code */
          /* execution is permitted. The return state has been set to */
          /* startReboot to keep it tidy and local            */
 
-      }   state startReboot
+      }   state waitForRebootCmd
    }
 }
 

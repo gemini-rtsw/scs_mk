@@ -1,10 +1,11 @@
 $(LINUX_ONLY)#!${INSTALL}/bin/${ARCH}/scs-mk-ioc
 
-cd ../..
+#cd ../..
 
 nfsMount("$(CFGSERVER)","$(CFGREMOTE)","$(CFGLOCAL)")
 
 epicsEnvSet "IOCSH_PS1" "scs-mk-ioc>"
+epicsEnvSet "EPICS_TS_NTP_CONF_FILE" "/rtconfig/ntp/ntp-10.2.50.10.conf"
 #epicsEnvSet "EPICS_CA_ADDR_LIST" "10.1.2.175"
 #epicsEnvSet "EPICS_CA_AUTO_ADDR_LIST" "NO"
 
@@ -23,13 +24,13 @@ dbLoadRecords("db/timeProbe.db","top=m2:")
 # - set the bc635 Time Provider priority to something other than the default
 # or set it to a negative value to disable the bc635 Time Provider
 # Must be called before BCconfigure
-bc635TimeSetTpPrio (60)
+# bc635TimeSetTpPrio (60)
 
 #Set the Bancomm master in RTC ("A3") Mode
 #bcUseRTCMode()
 
 # - Master ? Simulate ? intPerSecond, intPerTick, timeOffset (microsec)
-BCconfigure (0, 0, 1000, 1, 0)
+# BCconfigure (0, 0, 1000, 1, 0)
 
 # initialise the xycom 240
 drvXy240ConfigOutputInit(1, 32, 0xd000, 0x0000, 0x0003)

@@ -55,7 +55,7 @@
 
 
 #if defined (__rtems__)
-/* #include <os/RTEMS/devIocStatsOSD.h> */  /* for reboot() */
+// #include <os/RTEMS/devIocStatsOSD.h>   /* for reboot() */
 #include <bsp/bootcard.h>              /* for bsp_reset() */
 #endif
 
@@ -307,6 +307,8 @@ typedef struct
 
 /* Public functions */
 
+int rebootVME();
+
 int act2tilt(location *position);
 
 int tilt2act(location *position);
@@ -360,7 +362,7 @@ long scsStateStringInit (struct genSubRecord * pgsub);
 long driveEvent (struct subRecord * psub);
 
 /* Global variables */
-int loadComplete;
+extern int loadComplete;
 extern int debugLevel;
 extern long inPosition;
 extern frameChange *ag2m2[MAX_SOURCES];

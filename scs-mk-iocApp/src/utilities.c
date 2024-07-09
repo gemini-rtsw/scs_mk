@@ -73,8 +73,11 @@
 #include <subRecord.h>
 #endif
 
-// #define SCSTOP "top = m2:"
-// #define INSTTOP "I = m2:inst:"
+#include <rtems.h>
+#include <rtems/shell.h>
+
+#define SCSTOP "top=m2:"
+#define INSTTOP "I=m2:inst:"
 
 static int loggingEnable = ON;
 
@@ -86,15 +89,7 @@ int debugLevel = DEBUG_NONE;
 long inPosition = 0;
 frameChange *ag2m2[MAX_SOURCES];
 
-/* not used anywhere. 20171019 MDW */
-//SEM_ID compileStatus = NULL; 
-//SEM_ID statusCompiled = NULL;
-
-
-// SEM_ID doPvLoad = NULL;
-// SEM_ID pvLoadComplete = NULL;
 epicsEventId doPvLoad;
-//epicsEventId pvLoadComplete;
 
 
 extern epicsMessageQueueId healthQId;
@@ -113,6 +108,66 @@ long monitorSadSnlState;
 long monitorProcessSnlState;
 long rebootScsSnlState;
 long moveBaffleSnlState;
+
+/* ===================================================================== */
+/* INDENT OFF */
+/*
+ * Function name:
+ * rebootVME
+ * 
+ * Purpose:
+ * Reboot a VME system
+ *
+ * Invocation:
+ * int rebootVME()
+ *
+ * Parameters in:
+ * 
+ * Parameters out:
+ * None
+ * 
+ * Return value:
+ *      < int       OK or ERROR
+ *
+ * Globals: 
+ *  External functions:
+ *  None
+ * 
+ *  External variables:
+ *  None
+ * 
+ * Requirements:
+ * 
+ * Author:
+ * 
+ * History:
+ * 
+ */
+
+/* INDENT ON */
+/* ===================================================================== */
+
+int rebootVME ()
+{
+    int     argc;
+    char *argv[40];
+    char *cmd_argv;
+    char *cmds[40];
+
+    /* function reboot a VME system */
+    printf ("rebootVME function: START\n");
+    cmd_argv = malloc (40);
+    cmds[0] = calloc (1, 40);
+    memset (cmds[0], 0, 1 * 40);
+    strncpy(cmds[0],"shutdown",40);
+    memcpy (cmd_argv, cmds[0], 40);
+    if (!rtems_shell_make_args(cmd_argv, &argc, argv, 40)) {
+       rtems_shell_execute_cmd(argv[0], argc, argv);
+    }
+    return (OK);
+}
+
+
 
 /* ===================================================================== */
 /* INDENT OFF */
@@ -326,7 +381,7 @@ int tcs2m2 (location *position)
 
     /* if debugging, dump some values */
 
-    if ((debugLevel > DEBUG_MED) & (debugLevel <= DEBUG_RESERVED1))
+    if ((debugLevel > DEBUG_MIN) & (debugLevel <= DEBUG_MED))
     { 
         printf ("debugLevel is %d\n", debugLevel);
 
@@ -415,7 +470,7 @@ int m22tcs (location *position)
 
     /* if debugging, dump some values */
 
-    if ((debugLevel > DEBUG_MED) & (debugLevel <= DEBUG_RESERVED1))
+    if ((debugLevel > DEBUG_MIN) & (debugLevel <= DEBUG_MED))
     { 
         printf ("debugLevel is %d\n", debugLevel);
 
@@ -964,43 +1019,46 @@ long readHealth(struct genSubRecord *pgsub)
     return(OK);
 }   
 
-/* These are loaded here instead of in the startup script so
- * that an init will reload them.
- */
-
+/* why aren't these being loaded in the startup script? */
 int loadInitFiles(void*p)
 {
-
-#define XSTR(s) STR(s)
-#define STR(s) #s
+   char filedir[128];
+   char filepath[255];
+   char macros[40];
+   
+   getDataFileDir(filedir);
+   getPvloadMacros(macros);
 
    for(;;)
    {
       epicsEventMustWait(doPvLoad);
 
-      errlogPrintf("pvload initialisation data\n");
+      errlogPrintf("pvload macros: \"%s\"\n", macros);
 
-      if(pvload(XSTR(CFGLOCAL) "/SCSinit.pv", "top=" XSTR(CFGTOP) ":", 0, 0) != OK)
-         errlogPrintf("pvload error SCSinit.pv\n");
+      snprintf(filepath, 255, "%s/%s", filedir, "SCSinit.pv");
+      if(pvload(filepath, macros, 0, 0) != OK)
+         errlogPrintf("pvload error %s\n", filepath);
       else
-         errlogPrintf("pvload SCSinit.pv\n");
+         errlogPrintf("pvload %s\n", filepath);
                 
-      if(pvload(XSTR(CFGLOCAL) "/xforms.pv", "top=" XSTR(CFGTOP) ":", 0, 0) != OK)
-         errlogPrintf("pvload error xforms.pv\n");
+      snprintf(filepath, 255, "%s/%s", filedir, "xforms.pv");
+      if(pvload(filepath, macros, 0, 0) != OK)
+         errlogPrintf("pvload error %s\n", filepath);
       else
-         errlogPrintf("pvload xforms.pv\n");
+         errlogPrintf("pvload %s\n", filepath);
 
-      if(pvload(XSTR(CFGLOCAL) "/limits.pv", "top=" XSTR(CFGTOP) ":", 0, 0) != OK)
-         errlogPrintf("pvload error limits.pv\n");
+      snprintf(filepath, 255, "%s/%s", filedir, "limits.pv");
+      if(pvload(filepath, macros, 0, 0) != OK)
+         errlogPrintf("pvload error %s\n", filepath);
       else
-         errlogPrintf("pvload limits.pv\n");
+         errlogPrintf("pvload %s\n", filepath);
 
-      if(pvload(XSTR(CFGLOCAL) "/instConfig.pv", "I=" XSTR(CFGTOP) ":inst:", 0, 0) != OK)
-         errlogPrintf("pvload error instConfig.pv\n");
+      snprintf(filepath, 255, "%s/%s", filedir, "instConfig.pv");
+      if(pvload(filepath, macros, 0, 0) != OK)
+         errlogPrintf("pvload error %s\n", filepath);
       else
-         errlogPrintf("pvload instConfig.pv\n");
+         errlogPrintf("pvload %s\n", filepath);
 
-      //epicsEventSignal(pvLoadComplete);
       loadComplete = 1;
     }
 }
