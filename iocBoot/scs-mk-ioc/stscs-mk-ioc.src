@@ -1,8 +1,8 @@
-$(LINUX_ONLY)#!${INSTALL}/bin/${ARCH}/scs-mk-ioc
+# Commented out Linux command:#!/home/emma.kurz/scs_mk/bin/RTEMS-mvme2700/scs-mk-ioc
 
 #cd ../..
 
-nfsMount("$(CFGSERVER)","$(CFGREMOTE)","$(CFGLOCAL)")
+nfsMount("10.2.71.11","/gem_sw/etc/rtconfig","/rtconfig")
 
 epicsEnvSet "IOCSH_PS1" "scs-mk-ioc>"
 epicsEnvSet "EPICS_TS_NTP_CONF_FILE" "/rtconfig/ntp/ntp-10.2.50.10.conf"
@@ -18,7 +18,7 @@ scs_mk_ioc_registerRecordDeviceDriver(pdbbase)
 dbLoadRecords("db/m2.db")
 dbLoadRecords("db/m2sad.db")
 # dbLoadRecords("db/iocAdminRTEMS.db"," IOC=m2:iocStats,TODFORMAT=%m/%d/%Y %H:%M:%S")
-dbLoadRecords("db/timeProbe.db","top=m2:")
+dbLoadRecords("db/timeProbe.db","top=m2v:")
 
 # Configure BANCOMM card
 # - set the bc635 Time Provider priority to something other than the default
@@ -39,7 +39,7 @@ drvXy240ConfigOutputInit(1, 32, 0xd000, 0x0000, 0x0003)
 drvVmi5588Config(0xA00000, 0x040000, 0xb0, 0x06)
 
 #ADDED THIS FROM THE CP START UP
-initSetParameters("/rtconfig/scs/",  "top=m2:, I=m2:inst:")
+initSetParameters("/rtconfig/scs/",  "top=m2v:, I=m2v:inst:")
 
 # initialise system, first xycom (via chopInit), then then rest.
 # Note: scsInit spawns processGuides which writes to the xycom if compiled
@@ -61,7 +61,7 @@ iocInit
 #CADlogging = 1
 
 #startGuideSim
-dbpf "m2:interlockOverride","1"
+dbpf "m2v:interlockOverride","1"
 
 ##M2TS TTL SERVO ON Card0, PORT7, Bit 1, HIGH #####
 #xy240_writePortBit (0,7,1,1)
@@ -69,19 +69,19 @@ dbpf "m2:interlockOverride","1"
 ##M2TS CEM POWER ON Card0, PORT7, Bit 0, HIGH #####
 #xy240_writePortBit (0,7,0,1)
 
-dbpf "m2:guideConfigReset.DIR","0"
+dbpf "m2v:guideConfigReset.DIR","0"
 ###### Start any sequence programs
-seq &timeSeq, "sys=m2:, top=tcs:"
-seq &tilt_st, "S=m2:tilt:, debug=0"
-seq &scs_st, "T=m2:, D=m2:, F=m2:, I=m2:inst:"
+seq &timeSeq, "sys=m2v:, top=tcs:"
+seq &tilt_st, "S=m2v:tilt:, debug=0"
+seq &scs_st, "T=m2v:, D=m2v:, F=m2v:, I=m2v:inst:"
 
 ####dbpr "m2:interlock"
 ##### Comment out during testing signal from GIS:
 ####
-dbpf "m2:guideConfigReset.DIR","2"
-dbpf "m2:guideConfigReset.DIR","3"
+dbpf "m2v:guideConfigReset.DIR","2"
+dbpf "m2v:guideConfigReset.DIR","3"
 
-dbpf "m2:setController.DIR","2"
-dbpf "m2:setController.DIR","3"
+dbpf "m2v:setController.DIR","2"
+dbpf "m2v:setController.DIR","3"
 
 
