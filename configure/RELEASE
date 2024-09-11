@@ -21,25 +21,25 @@
 
 TEMPLATE_TOP=$(EPICS_BASE)/templates/makeBaseApp/top
 
-PRODSUP=/gem_base/epics/support
+#PRODSUP=/gem_base/epics/support
 
-TIMELIB=$(PRODSUP)/timelib
-SLALIB=$(PRODSUP)/slalib
-GEMREC=$(PRODSUP)/geminiRec
-GEMUTIL=$(PRODSUP)/gemUtil
-TCSLIB=$(PRODSUP)/tcslib
-SNCSEQ=$(PRODSUP)/sequencer
-PVLOAD=$(PRODSUP)/pvload
-BANCOMM=$(PRODSUP)/bancomm
+#TIMELIB=$(PRODSUP)/timelib
+#SLALIB=$(PRODSUP)/slalib
+#GEMREC=$(PRODSUP)/geminiRec
+#GEMUTIL=$(PRODSUP)/gemUtil
+#TCSLIB=$(PRODSUP)/tcslib
+#SNCSEQ=$(PRODSUP)/sequencer
+#PVLOAD=$(PRODSUP)/pvload
+#BANCOMM=$(PRODSUP)/bancomm
 # IOCSTATS=$(PRODSUP)/iocStats
-TIMEPROBE=$(PRODSUP)/timeProbe
-SYMB=$(PRODSUP)/symb
-VMIC=$(PRODSUP)/vmi5588
-XYCOM=$(PRODSUP)/xycom
+#TIMEPROBE=$(PRODSUP)/timeProbe
+#SYMB=$(PRODSUP)/symb
+#VMIC=$(PRODSUP)/vmi5588
+#XYCOM=$(PRODSUP)/xycom
 
 
 # EPICS_BASE usually appears last so other apps can override stuff:
-EPICS_BASE=/gem_base/epics/epics-base
+#EPICS_BASE=/gem_base/epics/epics-base
 
 # Set RULES here if you want to take build rules from somewhere
 # other than EPICS_BASE:

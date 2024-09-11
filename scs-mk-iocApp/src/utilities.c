@@ -77,6 +77,7 @@
 // #define INSTTOP "I = m2:inst:"
 
 static int loggingEnable = ON;
+int loadComplete=0;
 
 /* Define function prototypes */
 
