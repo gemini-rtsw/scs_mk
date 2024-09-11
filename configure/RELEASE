@@ -37,6 +37,7 @@ TEMPLATE_TOP=$(EPICS_BASE)/templates/makeBaseApp/top
 #VMIC=$(PRODSUP)/vmi5588
 #XYCOM=$(PRODSUP)/xycom
 
+GCBCOMMANDRECORD = $(TOP)/gcbCommandRecord
 
 # EPICS_BASE usually appears last so other apps can override stuff:
 #EPICS_BASE=/gem_base/epics/epics-base

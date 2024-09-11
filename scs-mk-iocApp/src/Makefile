@@ -33,6 +33,13 @@ scs-mk-ioc_DBD += initTrace.dbd
 scs-mk-ioc_DBD += symb.dbd
 scs-mk-ioc_DBD += scs.dbd
 
+#PVA stuff
+scs-mk-ioc_DBD += qsrv.dbd
+scs-mk-ioc_DBD += PVAServerRegister.dbd
+# registerChannelProviderLocal is needed to create the PVDatabase within the IOC
+scs-mk-ioc_DBD += registerChannelProviderLocal.dbd
+scs-mk-ioc_DBD += gcbCommandRecord.dbd
+
 # scs-mk-ioc_registerRecordDeviceDriver.cpp derives from scs-mk-ioc.dbd
 scs-mk-ioc_SRCS += scs-mk-ioc_registerRecordDeviceDriver.cpp
 
@@ -81,6 +88,9 @@ scs-mk-ioc_LIBS += listAlarmRecords
 scs-mk-ioc_LIBS += systemTickTools 
 scs-mk-ioc_LIBS += initTrace
 scs-mk-ioc_LIBS += Symb 
+# gcb support package stuff
+scs-mk-ioc_LIBS += gcbCommandRecord 
+scs-mk-ioc_LIBS += pvaClient pvDatabase qsrv pvAccessIOC pvAccess pvAccessCA nt pvData
 
 # Finally link to the EPICS Base libraries
 scs-mk-ioc_LIBS += scsSupport seq pv
