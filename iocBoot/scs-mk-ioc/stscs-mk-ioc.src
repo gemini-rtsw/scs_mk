@@ -1,6 +1,7 @@
 $(LINUX_ONLY)#!${INSTALL}/bin/${ARCH}/scs-mk-ioc
 
-cd ../..
+#cd ../..
+cd $(CFGSTARTDIR)
 
 nfsMount("$(CFGSERVER)","$(CFGREMOTE)","$(CFGLOCAL)")
 
@@ -16,8 +17,8 @@ scs_mk_ioc_registerRecordDeviceDriver(pdbbase)
 ## Load record instances
 dbLoadRecords("db/m2.db")
 dbLoadRecords("db/m2sad.db")
-# dbLoadRecords("db/iocAdminRTEMS.db"," IOC=m2:iocStats,TODFORMAT=%m/%d/%Y %H:%M:%S")
-dbLoadRecords("db/timeProbe.db","top=m2:")
+# dbLoadRecords("db/iocAdminRTEMS.db"," IOC=$(CFGTOP):iocStats,TODFORMAT=%m/%d/%Y %H:%M:%S")
+dbLoadRecords("db/timeProbe.db","top=$(CFGTOP):")
 
 # Configure BANCOMM card
 # - set the bc635 Time Provider priority to something other than the default
@@ -57,7 +58,7 @@ iocInit
 #CADlogging = 1
 
 #startGuideSim
-dbpf "m2:interlockOverride","1"
+dbpf "$(CFGTOP):interlockOverride","1"
 
 ##M2TS TTL SERVO ON Card0, PORT7, Bit 1, HIGH #####
 #xy240_writePortBit (0,7,1,1)
@@ -65,19 +66,19 @@ dbpf "m2:interlockOverride","1"
 ##M2TS CEM POWER ON Card0, PORT7, Bit 0, HIGH #####
 #xy240_writePortBit (0,7,0,1)
 
-dbpf "m2:guideConfigReset.DIR","0"
+dbpf "$(CFGTOP):guideConfigReset.DIR","0"
 ###### Start any sequence programs
-seq &timeSeq, "sys=m2:, top=tcs:"
-seq &tilt_st, "S=m2:tilt:, debug=0"
-seq &scs_st, "T=m2:, D=m2:, F=m2:, I=m2:inst:"
+seq &timeSeq, "sys=$(CFGTOP):, top=tcs:"
+seq &tilt_st, "S=$(CFGTOP):tilt:, debug=0"
+seq &scs_st, "T=$(CFGTOP):, D=$(CFGTOP):, F=$(CFGTOP):, I=$(CFGTOP):inst:"
 
-####dbpr "m2:interlock"
+####dbpr "$(CFGTOP):interlock"
 ##### Comment out during testing signal from GIS:
 ####
-dbpf "m2:guideConfigReset.DIR","2"
-dbpf "m2:guideConfigReset.DIR","3"
+dbpf "$(CFGTOP):guideConfigReset.DIR","2"
+dbpf "$(CFGTOP):guideConfigReset.DIR","3"
 
-dbpf "m2:setController.DIR","2"
-dbpf "m2:setController.DIR","3"
+dbpf "$(CFGTOP):setController.DIR","2"
+dbpf "$(CFGTOP):setController.DIR","3"
 
 
