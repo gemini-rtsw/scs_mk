@@ -5,3 +5,4 @@
 [submodule "gcbCommandRecord"]
 	path = gcbCommandRecord
 	url = git@gitlab.com:nsf-noirlab/gemini/rtsw/m2-cem-project/gcbCommandRecord.git
+    branch = scs-supp

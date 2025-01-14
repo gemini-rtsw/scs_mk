@@ -33,6 +33,10 @@ scs-mk-ioc_DBD += initTrace.dbd
 scs-mk-ioc_DBD += symb.dbd
 scs-mk-ioc_DBD += scs.dbd
 
+#GCB Stuff
+scs-mk-ioc_DBD += gcbInterface.dbd
+
+
 #PVA stuff
 scs-mk-ioc_DBD += qsrv.dbd
 scs-mk-ioc_DBD += PVAServerRegister.dbd
@@ -65,6 +69,7 @@ scs-mk-ioc_SRCS += m2ParseMsg.c
 scs-mk-ioc_SRCS += showEngineering.c
 scs-mk-ioc_SRCS += guide.c
 scs-mk-ioc_SRCS += scs.syms.cpp
+scs-mk-ioc_SRCS += gcbInterface.cpp
 
 LIBRARY_IOC += scsSupport
 scsSupport_LIBS += seq pv
