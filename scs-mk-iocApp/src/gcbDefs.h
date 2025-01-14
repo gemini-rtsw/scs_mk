@@ -28,11 +28,11 @@ extern "C" {
     /* Functions and shared memory to be used by Cpp and C stuff  */
     //extern gcbBlock *page0;
     extern int threadCounter;
-    extern statusBlock *page1;
+    extern statusBlockGCB *page1gcb;
     //extern int cmdBlockEventWait();
     //extern void cmdBlockMutexLock();
     //extern void cmdBlockMutexUnlock();
-    //extern void gcbStatusProcess(statusBlock *refmem);
+    //extern void gcbStatusProcess(statusBlockGCB *refmem);
     //extern void statusBlockTrigger();
     extern int externalReadThreadExitEventWait();
     extern int stsBlockEventWait();

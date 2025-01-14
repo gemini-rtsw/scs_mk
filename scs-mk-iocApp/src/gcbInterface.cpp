@@ -43,7 +43,7 @@ EpicsEventPtr rtStop = EpicsEventPtr(new epics::pvData::Event());
 
 /* Global pointer to Status Monitor */
 GCBStatusClientPtr gcb_sts_client = NULL;
-statusBlock *page1 = new statusBlock();
+statusBlockGCB *page1gcb = new statusBlockGCB();
 EpicsEventPtr rxP1Trigger = EpicsEventPtr(new epics::pvData::Event());
 EpicsEventPtr extReadThreadExit = EpicsEventPtr(new epics::pvData::Event());
 EpicsMutexPtr rwPage1Sem = EpicsMutexPtr(new epicsMutex());
@@ -98,7 +98,7 @@ void initGCBStatusDataShare()
         return;
     }
     
-    gcb_sts_client->initDataSharing(page1, rwPage1Sem, rxP1Trigger);
+    gcb_sts_client->initDataSharing(page1gcb, rwPage1Sem, rxP1Trigger);
 }
 
 /*
