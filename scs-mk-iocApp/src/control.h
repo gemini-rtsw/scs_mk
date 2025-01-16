@@ -250,7 +250,7 @@ typedef struct
     float           upperBearingAngle;      /* 22 0x58 */
     float           lowerBearingAngle;      /* 23 0x5c */
     float           pad[232];
-}statusBlock;
+}statusBlockSynch;
 
 typedef struct
 {
@@ -389,7 +389,7 @@ typedef struct
 typedef struct
 {
     commandBlock    page0;
-    statusBlock     page1;
+    statusBlockSynch     page1;
     diagBlock       testResults;    /* page 2 */
     m2EngData       m2Eng;      /* page13a,b */
     unusedBlock     page4;
@@ -550,7 +550,7 @@ extern epicsMessageQueueId commandQId;
 extern epicsMessageQueueId receiveQId;
 
 extern long interlockFlag;
-extern statusBlock safeBlock;
+extern statusBlockSynch safeBlock;
 /* get current guide values to send to TCS */
 extern double xGuideTcs;
 extern double yGuideTcs;

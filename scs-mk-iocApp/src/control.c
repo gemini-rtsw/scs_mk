@@ -345,7 +345,7 @@ epicsMutexId eventDataSem = NULL;
 epicsEventId cemTimerEndSem = NULL;
 epicsEventId cemTimerStartSem = NULL;
 long interlockFlag = OFF;
-statusBlock safeBlock;
+statusBlockSynch safeBlock;
 
 /* get current guide values to send to TCS */
 double xGuideTcs = 0.0;
@@ -2441,7 +2441,7 @@ static int NsNrTolerance = 1;
 void scsReceive (void)
 {
    long simCheck = 0xabcd;
-   statusBlock localStatusBlock;
+   statusBlockSynch localStatusBlock;
 
    for (;;)
    {
@@ -2454,7 +2454,7 @@ void scsReceive (void)
             /* no simulation active, grab data from reflective memory */
 
             scsrx2++; 
-            localStatusBlock = *(statusBlock *) & scsBase->page1;
+            localStatusBlock = *(statusBlockSynch *) & scsBase->page1;
 
             /* grab the engineering data for logging */
             /* only does anything if m2LogActive is set (via
@@ -2478,7 +2478,7 @@ void scsReceive (void)
             /* simulation active, get data from m2 buffers */
 	    if ( m2MemFree ) {
                epicsMutexLock(m2MemFree);
-               localStatusBlock = *(statusBlock *) & m2Ptr->page1;
+               localStatusBlock = *(statusBlockSynch *) & m2Ptr->page1;
                epicsMutexUnlock(m2MemFree);
             } else {
                errorLog ("scsReceive - couldn't obtain m2MemFree mutex", 1, ON);
@@ -2517,7 +2517,7 @@ void scsReceive (void)
 
                  if (refMemFree) {
                     epicsMutexLock(refMemFree);
-                    *(statusBlock *) & scsPtr->page1 = localStatusBlock;
+                    *(statusBlockSynch *) & scsPtr->page1 = localStatusBlock;
                     epicsMutexUnlock(refMemFree); 
                     scsrx3b++; 
                  } else {
