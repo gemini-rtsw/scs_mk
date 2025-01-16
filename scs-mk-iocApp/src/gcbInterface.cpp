@@ -35,8 +35,6 @@ using std::string;
 
 /* Global pointer to gcb record */
 GCBCommandRecordPtr gcb_rec = NULL;
-/* Global pointer to an EPICS thread */
-GCBThreadPtr superThread;
 /* Global pointers to GCB internal thread flags */
 EpicsEventPtr rtTrigger = EpicsEventPtr(new epics::pvData::Event());
 EpicsEventPtr rtStop = EpicsEventPtr(new epics::pvData::Event());
@@ -114,43 +112,6 @@ void startGCBStatusClientThread()
     gcb_sts_client->startThread();
 }
 
-/*
- * @brief Test function to pass to a thread object
- * */
-void testRunFunc()
-{
-        std::cout << "Thread Starting!!!\n";
-        while(1)
-        {
-            std::cout << "Thread going to sleep!!!\n";
-            rtTrigger->wait();
-            epicsThreadSleep(.1);
-            std::cout << "The thread has been awoken\n";
-        } 
-}
-
-/*
- * @brief Initialize an epics thread with name "name".
- * A pointer will be assigned to the thread, to access the semaphores
- *
- * @param name: The name of the thread*/
-void startTest(const char *name)
-{
-    superThread = GCBThreadPtr(new GCBThread(name, testRunFunc));
-    epicsThreadSleep(0.1);
-    superThread->init();
-    superThread->start();
-}
-
-/*
- * @brief Signal the epics thread to wake up.
- * The function uses the method signalThread to access the semaphore.
- * */
-void wakeThread()
-{
-    superThread->signalThread();
-}
-
 /**
  *  @brief Function that will be accessed by
  *  the IOC's C infrastructure
@@ -177,18 +138,6 @@ void gcbProcess(sharedMem *refmem)
     }
     //std::cout << "Writting to GCB record thread\n";
     gcb_rec->processSynch(refmem);
-}
-
-/*
- * @brief Start the internal GCB Record thread.
- * Uses the GCB Record method startThread() to initialize the internal record.*/
-void startRecThread()
-{
-    if(!gcb_rec) {
-        throw std::runtime_error("gcbCommandRecord has not been created");
-        return;
-    }
-    gcb_rec->startThread(rtTrigger, rtStop);
 }
 
 /*
@@ -270,56 +219,12 @@ static void gcbInitRecCallFunc(const iocshArgBuf *args)
     initGcbCmdRecord(recordName);
 }
 
-static const iocshFuncDef gcbStartThreadFuncDef = {
-    "gcbStartRecThread", 0, NULL};
-
-static void gcbStartThreadCallFunc(const iocshArgBuf *args)
-{
-    startRecThread();
-}
-
 static const iocshFuncDef gcbInitStatusClientDataSharingFuncDef = {
     "gcbInitStatusClientDataShare", 0, NULL};
 
 static void gcbInitStatusClientDataSharingCallFunc(const iocshArgBuf *args)
 {
     initGCBStatusDataShare();
-}
-
-static const iocshArg threadArg0 = { "threadName", iocshArgString };
-static const iocshArg *threadArgs[] = { &threadArg0 };
-
-static const iocshFuncDef gcbTestThreadFuncDef = {
-    "gcbLaunchThread", 1, threadArgs};
-
-static void gcbTestThreadCallFunc(const iocshArgBuf *args)
-{
-    char *threadName = args[0].sval;
-    if(!threadName) {
-        throw std::runtime_error("gcbLaunchThread: invalid number of arguments");
-    }
-    startTest(threadName);
-}
-
-static const iocshFuncDef gcbTestWakeThreadFuncDef = {
-    "gcbWakeThread", 0, NULL};
-
-static void gcbTestWakeThreadCallFunc(const iocshArgBuf *args)
-{
-    wakeThread();
-}
-
-static const iocshFuncDef stopThreadsFuncDef = {
-    "exitGracefully", 0, NULL};
-
-static void stopThreadsCallFunc(const iocshArgBuf *args)
-{
-    extReadThreadExit->signal();
-    rxP1Trigger->signal();
-    while(threadCounter){
-        epicsThreadSleep(0.005);
-    }
-    epicsExit(1);
 }
 
 static const iocshArg pvcltArg0 = { "pvcltName", iocshArgString };
@@ -352,10 +257,6 @@ static void gcbRegisterCppCommands(void)
         firstTime = 0;
         iocshRegister(&gcbInitRecFuncDef, gcbInitRecCallFunc);
         iocshRegister(&gcbInitStsCltFuncDef, gcbInitStsCltCallFunc);
-        iocshRegister(&gcbStartThreadFuncDef, gcbStartThreadCallFunc);
-        iocshRegister(&gcbTestThreadFuncDef, gcbTestThreadCallFunc);
-        iocshRegister(&gcbTestWakeThreadFuncDef, gcbTestWakeThreadCallFunc);
-        iocshRegister(&stopThreadsFuncDef, stopThreadsCallFunc);
         iocshRegister(&gcbStartStsClientThreadFuncDef, gcbStartStsClientThreadCallFunc);
         iocshRegister(&gcbInitStatusClientDataSharingFuncDef, gcbInitStatusClientDataSharingCallFunc);
     }

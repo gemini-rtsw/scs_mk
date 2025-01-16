@@ -67,8 +67,6 @@
                            scsReceiveNow, commandQId, receiveQId 
                            SYSTEM_CLOCK_RATE */
 
-#include <gcbCommand/gcbSynchro.h> // Included for refmem struct definition
-#include "gcbDefs.h"
 
 extern void rmISR2(int);
 extern void rmISR3(int);
@@ -77,25 +75,12 @@ extern void rmISR3(int);
 /* Global thread control variables  */
 epicsEventId gcbFlag; /* Indicates an interrupt has occurred */
 epicsThreadId gcbTID; /* Thread ID for the gcb Interface*/
-epicsEventId gcbMonFlag; /* Indicates an interrupt has occurred */
 epicsThreadId gcbMonTID; /* Thread ID for the gcb Interface*/
 
 EVENTPVT gcbRecProcFlag; /* Event object to trigger the Tx Record (needs to be reconsidered) */
 
 int recFlagAcq = 0; /* The record flag has been defined  */
 
-/* Function prototypes  */
-void gcbInterface (void);
-void gcbPage1Reader();
-
-/* CPP function prototypes */
-int externalReadThreadExitEventWait();
-int stsBlockEventWait();     // Wait for the Write Status flag to trigger
-void stsBlockMutexLock();    // Lock the semaphore to handle page1 cem status
-void stsBlockMutexUnlock();  // Unlock semaphore
-void triggerGCBfromC(void);
-void gcbProcess(sharedMem *refmem);
-void exitGracefully();
 
 /* Global variables */
 int stop = 0;

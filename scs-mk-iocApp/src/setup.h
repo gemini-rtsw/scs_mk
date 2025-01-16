@@ -37,11 +37,23 @@
 #define _INCLUDED_SETUP_H
 
 #include "utilities.h"
+#include <gcbCommand/gcbSynchro.h> // Included for refmem struct definition
+#include "gcbDefs.h"
 
 /* Public functions */
 int scsInit(void);
 int scsConfigureISR(void);
 
+/* CPP function prototypes */
+int externalReadThreadExitEventWait();
+int stsBlockEventWait();     // Wait for the Write Status flag to trigger
+void stsBlockMutexLock();    // Lock the semaphore to handle page1 cem status
+void stsBlockMutexUnlock();  // Unlock semaphore
+void triggerGCBfromC(void);
+void gcbProcess(sharedMem *refmem);
+void exitGracefully();
+
 /* Global variables */
+extern sharedMem testSCSBase;
 
 #endif
