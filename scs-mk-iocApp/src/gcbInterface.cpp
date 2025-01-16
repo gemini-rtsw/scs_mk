@@ -43,7 +43,7 @@ EpicsEventPtr rtStop = EpicsEventPtr(new epics::pvData::Event());
 
 /* Global pointer to Status Monitor */
 GCBStatusClientPtr gcb_sts_client = NULL;
-statusBlockGCB *page1gcb = new statusBlockGCB();
+statusBlock *page1gcb = new statusBlock();
 EpicsEventPtr rxP1Trigger = EpicsEventPtr(new epics::pvData::Event());
 EpicsEventPtr extReadThreadExit = EpicsEventPtr(new epics::pvData::Event());
 EpicsMutexPtr rwPage1Sem = EpicsMutexPtr(new epicsMutex());
