@@ -17,8 +17,8 @@
 CHECK_RELEASE = YES
 
 CNFG_LOCAL = /rtconfig
-CNFG_SERVER = 10.2.71.11
-CNFG_REMOTE = /gem_sw/etc/rtconfig
+CNFG_SERVER = 10.1.71.30
+CNFG_REMOTE =/gem_test/rtconfigFAKE
 CNFG_STARTDIR = /gem_test/ignacio.arriagada/scs_mk
 CNFG_TOP = m2t
 
