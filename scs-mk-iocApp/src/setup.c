@@ -87,7 +87,6 @@ int stop = 0;
 int start = 0;
 float procRate = 5.0;
 
-sharedMem *gcbSCSBase = NULL; /* Pointer to the sim ref mem */
 
 /* Declare externals */
 epicsMessageQueueId  healthQId = NULL;
@@ -232,6 +231,11 @@ int scsInit (void)
       printf ("malloc fail on creation of scsPtr buffer\n");
       return (ERROR);
    }
+   /* Initialize the GCB memory space */
+   if ((gcbSCSBase = (sharedMem *) malloc (sizeof(sharedMem))) == NULL) {
+       errlogMessage("malloc fail on creation of gcbSCSBase buffer\n");
+       return (ERROR);
+   }
 
    /* if no reflective memory card is present, create an equivalent buffer */
    if(rmStatus(0) != S_dev_NoInit) {
@@ -247,14 +251,10 @@ int scsInit (void)
          errlogMessage("malloc fail on creation of scsBase buffer\n");
          return (ERROR);
       }
-      /* Initialize the GCB memory space */
-      if ((gcbSCSBase = (sharedMem *) malloc (sizeof(sharedMem))) == NULL) {
-          errlogMessage("malloc fail on creation of gcbSCSBase buffer\n");
-          return (ERROR);
-      }
    }
 
    printf ("initRefMem, scsPtr = %p, scsBase = %p\n",  scsPtr, scsBase); 
+   printf ("initSharedMem, gcbSCSBase = %p\n", scsBase); 
 
    if ((sbStatus = (SynchroStatus *) malloc (sizeof (SynchroStatus))) ==NULL )
    {
@@ -302,6 +302,7 @@ int scsInit (void)
    epicsMutexUnlock(m2MemFree);
    mutex16++;
    memset ((void *) scsBase, 0, sizeof (memMap));
+   memset ((void *) gcbSCSBase, 0, sizeof (sharedMem));
    memset ((void *) sbStatus, 0, sizeof (SynchroStatus));
 
    /* Do in startup in order that xycom has already been inited.

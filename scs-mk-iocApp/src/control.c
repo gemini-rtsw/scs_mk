@@ -331,6 +331,7 @@ int simLevel = 0;
 int refmem_mon1 = 0;
 memMap *scsPtr = NULL;
 memMap *scsBase = NULL;
+sharedMem *gcbSCSBase = NULL; /* Pointer to the sim ref mem */
 memMap *m2Ptr = NULL;
 SynchroStatus *sbStatus = NULL;
 epicsMutexId refMemFree = NULL;

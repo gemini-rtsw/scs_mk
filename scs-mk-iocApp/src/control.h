@@ -36,6 +36,7 @@
 
 #include "chopControl.h"        /* For BEAMA definition */
 #include "guide.h"
+#include <gcbCommand/gcbSynchro.h> // Included for refmem struct definition
 //#include "utilities.h"          /* For MAX_SOURCES */
 
 #define AUTOGUIDE 0
@@ -531,6 +532,7 @@ extern int simLevel;
 extern int refmem_mon1;
 extern memMap *scsPtr;
 extern memMap *scsBase;
+extern sharedMem *gcbSCSBase; /* GCB shared mem */
 extern memMap *m2Ptr;
 
 extern epicsMutexId m2MemFree;
