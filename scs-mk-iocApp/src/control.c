@@ -1758,11 +1758,11 @@ void processGuides (void)
          scsBase->page0.checksum = 
             checkSum ((void *) &scsBase->page0.NS, COMMAND_BLOCK_SIZE);
          /* TODO: This is here to test gcb interface, needs to be modified or removed */
-         gcbSCSBase->scsData.commandCode = command;
-         gcbSCSBase->scsData.NS = scsBase->page0.NS;
-         gcbSCSBase->scsData.heartbeat = scsBase->page0.heartbeat;
-         gcbSCSBase->scsData.checksum =
-            checkSum ((void *) &gcbSCSBase->scsData.NS, COMMAND_BLOCK_SIZE);
+         /*gcbSCSBase->scsData.commandCode = command;*/
+         /*gcbSCSBase->scsData.NS = scsBase->page0.NS;*/
+         /*gcbSCSBase->scsData.heartbeat = scsBase->page0.heartbeat;*/
+         /*gcbSCSBase->scsData.checksum =*/
+            /*checkSum ((void *) &gcbSCSBase->scsData.NS, COMMAND_BLOCK_SIZE);*/
 
          /* flag availability of new data */
          /* The original ideal of sending only everyother pulse has bee removed */
@@ -1945,6 +1945,7 @@ void processGuides (void)
          guideInfo.rate = sensedGuideRate;
 
       /* Process the GCB record */
+      memcpy(&(gcbSCSBase->scsData), &(scsBase->page0), sizeof(commandBlock));
       gcbProcess(gcbSCSBase);
       procGuideCount10++; /*10*/
    } /* end for(;;) FOREVER*/
