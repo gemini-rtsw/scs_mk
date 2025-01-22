@@ -54,6 +54,6 @@ void gcbProcess(sharedMem *refmem);
 void exitGracefully();
 
 /* Global variables */
-extern sharedMem *testSCSBase;
+extern sharedMem *gcbSCSBase;
 
 #endif

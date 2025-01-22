@@ -87,7 +87,7 @@ int stop = 0;
 int start = 0;
 float procRate = 5.0;
 
-sharedMem *testSCSBase = NULL; /* Pointer to the sim ref mem */
+sharedMem *gcbSCSBase = NULL; /* Pointer to the sim ref mem */
 
 /* Declare externals */
 epicsMessageQueueId  healthQId = NULL;
@@ -246,6 +246,11 @@ int scsInit (void)
       {
          errlogMessage("malloc fail on creation of scsBase buffer\n");
          return (ERROR);
+      }
+      /* Initialize the GCB memory space */
+      if ((gcbSCSBase = (sharedMem *) malloc (sizeof(sharedMem))) == NULL) {
+          errlogMessage("malloc fail on creation of gcbSCSBase buffer\n");
+          return (ERROR);
       }
    }
 
