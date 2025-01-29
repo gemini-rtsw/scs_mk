@@ -46,11 +46,6 @@ int scsConfigureISR(void);
 
 /* CPP function prototypes */
 int externalReadThreadExitEventWait();
-int stsBlockEventWait();     // Wait for the Write Status flag to trigger
-void stsBlockMutexLock();    // Lock the semaphore to handle page1 cem status
-void stsBlockMutexUnlock();  // Unlock semaphore
 void triggerGCBfromC(void);
-void gcbProcess(sharedMem *refmem);
-void exitGracefully();
 
 #endif

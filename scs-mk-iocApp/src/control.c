@@ -90,6 +90,7 @@
 #include "control.h"    /* For logThreshold, SYSTEM_CLOCK_RATE */
 #include "guide.h"      /* For updateInterval, guideOn, guideOnA, guideOnB,
                            weight */
+#include "gcbDefs.h"    /* For GCB */
 #include "interlock.h"  /* For lockPosition, scsState */
 #include "interp.h"     /* For AX, AY, ..., Z axis identifiers */
 #include "eventBus.h"   /* fo XYCARDNUM */
@@ -323,6 +324,12 @@ long servoOnStatus;
 static int  frameConvert (converted *result, frameChange *f, const double x, 
       const double y, const double z);
 
+/* CPP function prototypes */
+int stsBlockEventWait();     // Wait for the Write Status flag to trigger
+void stsBlockMutexLock();    // Lock the semaphore to handle page1 cem status
+void stsBlockMutexUnlock();  // Unlock semaphore
+void gcbProcess(sharedMem *refmem);
+void exitGracefully();
 
 void phasorShow(void);
 
@@ -346,7 +353,7 @@ epicsMutexId eventDataSem = NULL;
 epicsEventId cemTimerEndSem = NULL;
 epicsEventId cemTimerStartSem = NULL;
 long interlockFlag = OFF;
-statusBlockSynch safeBlock;
+statusBlock safeBlock;
 
 /* get current guide values to send to TCS */
 double xGuideTcs = 0.0;
@@ -2451,12 +2458,13 @@ static int NsNrTolerance = 1;
 void scsReceive (void)
 {
    long simCheck = 0xabcd;
-   statusBlockSynch localStatusBlock;
+   statusBlock localStatusBlock;
 
    for (;;)
    {
-      if (epicsEventWaitWithTimeout(scsReceiveNow, waittime2) == epicsEventWaitOK)
+      if (epicsEventWaitWithTimeout(scsReceiveNow, waittime2) == epicsEventWaitOK || 1)
       {
+         stsBlockEventWait();
          scsrx1++; 
          /*errlogPrintf ("nodeId = %d, counter = %d\n", nodeISR2, isr2);*/
          if (simLevel == 0)
@@ -2464,7 +2472,8 @@ void scsReceive (void)
             /* no simulation active, grab data from reflective memory */
 
             scsrx2++; 
-            localStatusBlock = *(statusBlockSynch *) & scsBase->page1;
+            //localStatusBlock = *(statusBlock *) & scsBase->page1;
+            localStatusBlock = *page1gcb;
 
             /* grab the engineering data for logging */
             /* only does anything if m2LogActive is set (via
@@ -2488,7 +2497,7 @@ void scsReceive (void)
             /* simulation active, get data from m2 buffers */
 	    if ( m2MemFree ) {
                epicsMutexLock(m2MemFree);
-               localStatusBlock = *(statusBlockSynch *) & m2Ptr->page1;
+               localStatusBlock = *(statusBlock *) & m2Ptr->page1;
                epicsMutexUnlock(m2MemFree);
             } else {
                errorLog ("scsReceive - couldn't obtain m2MemFree mutex", 1, ON);
@@ -2527,7 +2536,7 @@ void scsReceive (void)
 
                  if (refMemFree) {
                     epicsMutexLock(refMemFree);
-                    *(statusBlockSynch *) & scsPtr->page1 = localStatusBlock;
+                    *(statusBlock *) & scsPtr->page1 = localStatusBlock;
                     epicsMutexUnlock(refMemFree); 
                     scsrx3b++; 
                  } else {

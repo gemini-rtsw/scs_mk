@@ -59,7 +59,7 @@
 
 #define WFS_TIMEOUT             20
 
-#define STATUS_BLOCK_SIZE       23      /* number of longs for checksum 
+#define STATUS_BLOCK_SYNCH_SIZE       23      /* number of longs for checksum 
                                            to consider                  */
 #define COMMAND_BLOCK_SIZE      61      /* number of longs for checksum 
                                            to consider                  */
@@ -390,7 +390,7 @@ typedef struct
 typedef struct
 {
     commandBlock    page0;
-    statusBlockSynch     page1;
+    statusBlock     page1;
     diagBlock       testResults;    /* page 2 */
     m2EngData       m2Eng;      /* page13a,b */
     unusedBlock     page4;
