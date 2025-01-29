@@ -2501,6 +2501,7 @@ void scsReceive (void)
 	    if ( m2MemFree ) {
                epicsMutexLock(m2MemFree);
                localStatusBlock = *(statusBlock *) & m2Ptr->page1;
+               localStatusWord.all = (unsigned)m2Ptr->page1.statusWord1;
                epicsMutexUnlock(m2MemFree);
             } else {
                errorLog ("scsReceive - couldn't obtain m2MemFree mutex", 1, ON);
@@ -2564,7 +2565,7 @@ void scsReceive (void)
                  }
 
                  if (local.testRequest == 0 && 
-                         localStatusBlock.statusWord.flags.diagnosticsAvailable == 1)
+                         localStatusWord.flags.diagnosticsAvailable == 1)
                  {
                      *(diagBlock *) & scsPtr->testResults = 
                          *(diagBlock *) & m2Ptr->testResults;

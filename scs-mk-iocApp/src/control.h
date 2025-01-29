@@ -552,7 +552,7 @@ extern epicsMessageQueueId commandQId;
 extern epicsMessageQueueId receiveQId;
 
 extern long interlockFlag;
-extern statusBlockSynch safeBlock;
+extern statusBlock safeBlock;
 /* get current guide values to send to TCS */
 extern double xGuideTcs;
 extern double yGuideTcs;
