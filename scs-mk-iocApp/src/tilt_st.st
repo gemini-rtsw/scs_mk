@@ -641,10 +641,11 @@ ss readRefMem
             /* write current status back to buffer */
 
             epicsMutexLock(m2MemFree);
-                m2Ptr->page1.statusWord.all = statusWord.all;
+                /*m2Ptr->page1.statusWord.all = statusWord.all;*/
+                m2Ptr->page1.statusWord1 = (long)statusWord.all;
                 m2Ptr->page1.heartbeat      = m2Heartbeat;
-                m2Ptr->page1.deployBaffle   = m2Deployable;
-                m2Ptr->page1.centralBaffle  = m2Central;
+                m2Ptr->page1.deployableBaffle   = m2Deployable;
+                m2Ptr->page1.periscopeBaffle  = m2Central;
                 m2Ptr->page1.enclosureTemp  = temperature;  
                 m2Ptr->page1.topEnd     = topEnd;
             epicsMutexUnlock(m2MemFree);

@@ -168,19 +168,19 @@ int act2tilt (location *position)
 
     /* convert input units (microns) to metres */
 
-    position->actuator1 /= 1e6;
-    position->actuator2 /= 1e6;
-    position->actuator3 /= 1e6;
+    position->actuatorHeight0 /= 1e6;
+    position->actuatorHeight1 /= 1e6;
+    position->actuatorHeight2 /= 1e6;
 
     /* convert actuator demands to tilt space - units degrees and metres */
 
     position->xTilt = RADS2DEGS * 
-        (2 * position->actuator1 - position->actuator2 - position->actuator3) / 
+        (2 * position->actuatorHeight0 - position->actuatorHeight1 - position->actuatorHeight2) / 
         (3 * ACTUATOR_RADIUS);
-    position->yTilt = RADS2DEGS * (position->actuator2 - position->actuator3) /
+    position->yTilt = RADS2DEGS * (position->actuatorHeight1 - position->actuatorHeight2) /
         (ACTUATOR_RADIUS * sqrt (3.0));
     position->zFocus = 
-        (position->actuator1 + position->actuator2 + position->actuator3) / 3;
+        (position->actuatorHeight0 + position->actuatorHeight1 + position->actuatorHeight2) / 3;
 
     /* convert degrees and metres to arcseconds and microns */
 
@@ -258,20 +258,20 @@ int tilt2act (location *position)
     position->yTilt *= DEGS2RADS / DEGS2ASECS;
     position->zFocus /= METRES2MICRONS;
 
-    position->actuator1 = position->zFocus + 
+    position->actuatorHeight0 = position->zFocus + 
         (ACTUATOR_RADIUS * position->xTilt);
-    position->actuator2 = position->zFocus - 
+    position->actuatorHeight1 = position->zFocus - 
         (ACTUATOR_RADIUS * position->xTilt / 2) + 
         (sqrt (3.0) * ACTUATOR_RADIUS * position->yTilt / 2);
-    position->actuator3 = position->zFocus - 
+    position->actuatorHeight2 = position->zFocus - 
         (ACTUATOR_RADIUS * position->xTilt / 2) - 
         (sqrt (3.0) * ACTUATOR_RADIUS * position->yTilt / 2);
 
     /* convert input units (microns) to metres */
 
-    position->actuator1 *= METRES2MICRONS;
-    position->actuator2 *= METRES2MICRONS;
-    position->actuator3 *= METRES2MICRONS;
+    position->actuatorHeight0 *= METRES2MICRONS;
+    position->actuatorHeight1 *= METRES2MICRONS;
+    position->actuatorHeight2 *= METRES2MICRONS;
 
     return (OK);
 }

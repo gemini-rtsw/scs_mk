@@ -299,13 +299,13 @@ long    CADmoveBaffle (struct cadRecord * pcad)
                done via delay in seq record
 
                Condition for OK completion:
-               (deployableDemand == scsPtr->page1.deployBaffle) &&
-               (centralDemand == scsPtr->page1.centralBaffle) AND
+               (deployableDemand == scsPtr->page1.deployableBaffle) &&
+               (centralDemand == scsPtr->page1.periscopeBaffle) AND
                time < TIMEOUT
 
                Condition for ERROR completion:
-               (deployableDemand != scsPtr->page1.deployBaffle) &&
-               (centralDemand != scsPtr->page1.centralBaffle) AND
+               (deployableDemand != scsPtr->page1.deployableBaffle) &&
+               (centralDemand != scsPtr->page1.periscopeBaffle) AND
                time >= TIMEOUT
             */
 

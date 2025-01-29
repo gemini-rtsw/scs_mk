@@ -2459,6 +2459,8 @@ void scsReceive (void)
 {
    long simCheck = 0xabcd;
    statusBlock localStatusBlock;
+   bitFieldM2 localStatusWord;
+   bitFieldM2 localscsptrStatusWord;
 
    for (;;)
    {
@@ -2474,6 +2476,7 @@ void scsReceive (void)
             scsrx2++; 
             //localStatusBlock = *(statusBlock *) & scsBase->page1;
             localStatusBlock = *page1gcb;
+            localStatusWord.all = (unsigned)page1gcb->statusWord1;
 
             /* grab the engineering data for logging */
             /* only does anything if m2LogActive is set (via
@@ -2568,8 +2571,11 @@ void scsReceive (void)
                      epicsEventSignal(diagnosticsAvailable);
                  }
 
+                 localscsptrStatusWord.all = (unsigned)scsPtr->page1.statusWord1;
+                 /*local.testRequest = */
+                     /*scsPtr->page1.statusWord.flags.diagnosticsAvailable;*/
                  local.testRequest = 
-                     scsPtr->page1.statusWord.flags.diagnosticsAvailable;
+                     localscsptrStatusWord.flags.diagnosticsAvailable;
              }
          }
          else
@@ -2662,7 +2668,7 @@ int checkTiltStatus (void)
    /* grab copy of m2 status word */
    if (refMemFree) {
       epicsMutexLock(refMemFree);
-      tiltStatusWord = scsPtr->page1.statusWord;
+      tiltStatusWord.all = (unsigned)scsPtr->page1.statusWord1;
       epicsMutexUnlock(refMemFree);
    } else {
       errorLog ("checkTiltStatus - couldn't obtain refMemFree mutex", 1, ON);

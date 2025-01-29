@@ -119,9 +119,9 @@ long m2CircBufferTask (memMap *ptr)
    cbXTilt[cbM2Counter] = ptr->page1.xTilt; 
    cbYTilt[cbM2Counter] = ptr->page1.yTilt;
    cbZfocus[cbM2Counter] = ptr->page1.zFocus;
-   cbAct1[cbM2Counter] = ptr->page1.actuator1;
-   cbAct2[cbM2Counter] = ptr->page1.actuator2;
-   cbAct3[cbM2Counter] = ptr->page1.actuator3;
+   cbAct1[cbM2Counter] = ptr->page1.actuatorHeight0;
+   cbAct2[cbM2Counter] = ptr->page1.actuatorHeight1;
+   cbAct3[cbM2Counter] = ptr->page1.actuatorHeight2;
    cbFol1[cbM2Counter] = ptr->m2Eng.follow1;
    cbFol2[cbM2Counter] = ptr->m2Eng.follow2;
    cbFol3[cbM2Counter] = ptr->m2Eng.follow3;
@@ -314,7 +314,7 @@ long m2LoggerTask (memMap *ptr)
    /* actuator positons */
 
    sprintf (m2Data, "%+4.2f %+4.2f %+4.2f",
-         ptr->page1.actuator1, ptr->page1.actuator2, ptr->page1.actuator3);
+         ptr->page1.actuatorHeight0, ptr->page1.actuatorHeight1, ptr->page1.actuatorHeight2);
 
    elgs (5, m2Data);    
    strncpy (m2Data, "blank", M2_DATA_SIZE);

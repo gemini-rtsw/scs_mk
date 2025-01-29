@@ -243,9 +243,9 @@ typedef struct
         double  xTilt;     /* tilt representation          */
         double  yTilt;
         double  zFocus;
-        double  actuator1; /* actuator representation      */
-        double  actuator2;
-        double  actuator3;
+        double  actuatorHeight0; /* actuator representation      */
+        double  actuatorHeight1;
+        double  actuatorHeight2;
         double  xPos;      /* translation position         */
         double  yPos;
         double  theta;     /* moveCurve representation     */

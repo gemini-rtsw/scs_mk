@@ -3917,12 +3917,12 @@ ss monitorSad {
             /* Write position of deployable baffle to SAD, 0, 1, 2 and 3 
                are valid positions. Any other is treated as moving */
 
-            if ((scsPtr->page1.deployBaffle == 0) | 
-                  (scsPtr->page1.deployBaffle == 1) | 
-                  (scsPtr->page1.deployBaffle == 2) | 
-                  (scsPtr->page1.deployBaffle == 3)) {
+            if ((scsPtr->page1.deployableBaffle == 0) | 
+                  (scsPtr->page1.deployableBaffle == 1) | 
+                  (scsPtr->page1.deployableBaffle == 2) | 
+                  (scsPtr->page1.deployableBaffle == 3)) {
                strncpy(deployableSad, 
-                     depBaffle[scsPtr->page1.deployBaffle], 
+                     depBaffle[scsPtr->page1.deployableBaffle], 
                      MAX_STRING_SIZE - 1);
 
                moveBaffleCar = CAR_IDLE;
@@ -3935,10 +3935,10 @@ ss monitorSad {
             /* Write position of central baffle to SAD, 0 and 1 
                are valid positions. Any other is treated as moving */
 
-            if ((scsPtr->page1.centralBaffle == 0) | 
-                  (scsPtr->page1.centralBaffle == 1)) {
+            if ((scsPtr->page1.periscopeBaffle == 0) | 
+                  (scsPtr->page1.periscopeBaffle == 1)) {
                strncpy(centralSad, 
-                     cenBaffle[scsPtr->page1.centralBaffle], 
+                     cenBaffle[scsPtr->page1.periscopeBaffle], 
                      MAX_STRING_SIZE - 1);
 
                moveBaffleCar = CAR_IDLE;
@@ -4059,18 +4059,18 @@ ss monitorSad {
       option -t;
 
       entry{
-        errlogPrintf("checkBaffle enter: dbafpos=%ld\n",scsPtr->page1.deployBaffle);
+        errlogPrintf("checkBaffle enter: dbafpos=%ld\n",scsPtr->page1.deployableBaffle);
       }
 
       /* Turn off further checks if demand and actual agree.*/
-      when (scsPtr->page0.deployBaffle == scsPtr->page1.deployBaffle) {
+      when (scsPtr->page0.deployBaffle == scsPtr->page1.deployableBaffle) {
           checkBaffleFlag = 0;
       } state updateSad
 
       when (delay(4)) {
           
         /* Must be MOVING (-1)...If not moving send the command again*/
-        if ( scsPtr->page1.deployBaffle >= 0)  {
+        if ( scsPtr->page1.deployableBaffle >= 0)  {
 
             errlogPrintf("checkBaffle: Failed to move when commanded. Try again.\n");
             writeCommand(BAFFLE_CHANGE);
@@ -4084,7 +4084,7 @@ ss monitorSad {
       } state updateSad
       
       exit {
-        errlogPrintf("checkBaffle exit: dbafpos=%ld\n",scsPtr->page1.deployBaffle);
+        errlogPrintf("checkBaffle exit: dbafpos=%ld\n",scsPtr->page1.deployableBaffle);
       }
     }
 

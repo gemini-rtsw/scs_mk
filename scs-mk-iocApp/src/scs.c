@@ -1118,21 +1118,21 @@ long CADactuators (struct cadRecord * pcad)
 
         case menuDirectivePRESET:
 
-            if (sscanf (pcad->a, "%lf%s", &position.actuator1, dumpString) != 1)
+            if (sscanf (pcad->a, "%lf%s", &position.actuatorHeight0, dumpString) != 1)
             {
                 strncpy (pcad->mess, "act1 failed conversion", MAX_STRING_SIZE - 1);
                 status = CAD_REJECT;
                 break;
             }
 
-            if (sscanf (pcad->b, "%lf%s", &position.actuator2, dumpString) != 1)
+            if (sscanf (pcad->b, "%lf%s", &position.actuatorHeight1, dumpString) != 1)
             {
                 strncpy (pcad->mess, "act2 failed conversion", MAX_STRING_SIZE - 1);
                 status = CAD_REJECT;
                 break;
             }
 
-            if (sscanf (pcad->c, "%lf%s", &position.actuator3, dumpString) != 1)
+            if (sscanf (pcad->c, "%lf%s", &position.actuatorHeight2, dumpString) != 1)
             {
                 strncpy (pcad->mess, "act3 failed conversion", MAX_STRING_SIZE - 1);
                 status = CAD_REJECT;
@@ -1157,9 +1157,9 @@ long CADactuators (struct cadRecord * pcad)
 
             if (interlockFlag != 1)
             {
-                *(double *) pcad->vala = position.actuator1;
-                *(double *) pcad->valb = position.actuator2;
-                *(double *) pcad->valc = position.actuator3;
+                *(double *) pcad->vala = position.actuatorHeight0;
+                *(double *) pcad->valb = position.actuatorHeight1;
+                *(double *) pcad->valc = position.actuatorHeight2;
                 *(double *) pcad->vald = position.xTilt;
                 *(double *) pcad->vale = position.yTilt;
                 *(double *) pcad->valf = position.zFocus;

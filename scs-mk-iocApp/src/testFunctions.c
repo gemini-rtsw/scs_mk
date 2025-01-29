@@ -400,34 +400,36 @@ void checkCommandBlock(int count)
 
 void    tiltState (const memMap *buffPtr)
 {
+    bitFieldM2 localStatusWord;
+    localStatusWord.all = (unsigned)buffPtr->page1.statusWord1; 
     printf ("__________________________________________________________\n");
     printf ("Item\t\tStatus\n");
     printf ("__________________________________________________________\n");
 
     /* options are arranged as: argument ? if not zero: if zero */
 
-    printf ("offloaders             %s\n", buffPtr->page1.statusWord.flags.offloaders ? "ON" : "OFF");
-    printf ("mirror control         %s\n", buffPtr->page1.statusWord.flags.mirrorControl ? "ON" : "OFF");
-    printf ("mirror moving          %s\n", buffPtr->page1.statusWord.flags.mirrorMoving ? "MOVING" : "STATIC");
-    printf ("mirror commanded       %s\n", buffPtr->page1.statusWord.flags.mirrorCommanded ? "COMMANDED" : "FREE");
-    printf ("mirror responding      %s\n", buffPtr->page1.statusWord.flags.mirrorResponding ? "RESPONDING" : "NOT RESPONDING");
-    printf ("sensor limit           %s\n", buffPtr->page1.statusWord.flags.sensorLimit ? "OUT OF LIMITS" : "OK");
-    printf ("actuator limit         %s\n", buffPtr->page1.statusWord.flags.actuatorLimit ? "OUT OF LIMITS" : "OK");
-    printf ("thermal limit          %s\n", buffPtr->page1.statusWord.flags.thermalLimit ? "OUT OF LIMITS" : "OK");
-    printf ("invalid dsp interrupt  %s\n", buffPtr->page1.statusWord.flags.mirrorDspInt ? "INVALID" : "OK");
-    printf ("invalid vib interrupt  %s\n", buffPtr->page1.statusWord.flags.vibDspInt ? "INVALID" : "OK");
-    printf ("demand space           %s\n", buffPtr->page1.statusWord.flags.space ? "ACTUATOR" : "TILT");
-    printf ("decs frozen            %s\n", buffPtr->page1.statusWord.flags.decsFrozen ? "FROZEN" : "NOT FROZEN");
-    printf ("decs paused            %s\n", buffPtr->page1.statusWord.flags.decsPaused ? "PAUSED" : "NOT PAUSED");
-    printf ("decs on                %s\n", buffPtr->page1.statusWord.flags.decsOn ? "ON" : "OFF");
-    printf ("chop on                %s\n", buffPtr->page1.statusWord.flags.chopOn ? "ON" : "OFF");
-    printf ("vibration control      %s\n", buffPtr->page1.statusWord.flags.vibControlOn ? "ON" : "OFF");
-    printf ("test  in progress      %s\n", buffPtr->page1.statusWord.flags.testInProgress ? "YES" : "NO");
-    printf ("init  in progress      %s\n", buffPtr->page1.statusWord.flags.initInProgress ? "YES" : "NO");
-    printf ("reset in progress      %s\n", buffPtr->page1.statusWord.flags.resetInProgress ? "YES" : "NO");
-    printf ("power enabled          %s\n", buffPtr->page1.statusWord.flags.powerEnabled ? "ENABLED" : "DISABLED");
-    printf ("health                 %s\n", buffPtr->page1.statusWord.flags.health ? "BAD" : "GOOD");
-    printf ("diagnostics available  %s\n", buffPtr->page1.statusWord.flags.diagnosticsAvailable ? "READY" : "NONE");
+    printf ("offloaders             %s\n", localStatusWord.flags.offloaders ? "ON" : "OFF");
+    printf ("mirror control         %s\n", localStatusWord.flags.mirrorControl ? "ON" : "OFF");
+    printf ("mirror moving          %s\n", localStatusWord.flags.mirrorMoving ? "MOVING" : "STATIC");
+    printf ("mirror commanded       %s\n", localStatusWord.flags.mirrorCommanded ? "COMMANDED" : "FREE");
+    printf ("mirror responding      %s\n", localStatusWord.flags.mirrorResponding ? "RESPONDING" : "NOT RESPONDING");
+    printf ("sensor limit           %s\n", localStatusWord.flags.sensorLimit ? "OUT OF LIMITS" : "OK");
+    printf ("actuator limit         %s\n", localStatusWord.flags.actuatorLimit ? "OUT OF LIMITS" : "OK");
+    printf ("thermal limit          %s\n", localStatusWord.flags.thermalLimit ? "OUT OF LIMITS" : "OK");
+    printf ("invalid dsp interrupt  %s\n", localStatusWord.flags.mirrorDspInt ? "INVALID" : "OK");
+    printf ("invalid vib interrupt  %s\n", localStatusWord.flags.vibDspInt ? "INVALID" : "OK");
+    printf ("demand space           %s\n", localStatusWord.flags.space ? "ACTUATOR" : "TILT");
+    printf ("decs frozen            %s\n", localStatusWord.flags.decsFrozen ? "FROZEN" : "NOT FROZEN");
+    printf ("decs paused            %s\n", localStatusWord.flags.decsPaused ? "PAUSED" : "NOT PAUSED");
+    printf ("decs on                %s\n", localStatusWord.flags.decsOn ? "ON" : "OFF");
+    printf ("chop on                %s\n", localStatusWord.flags.chopOn ? "ON" : "OFF");
+    printf ("vibration control      %s\n", localStatusWord.flags.vibControlOn ? "ON" : "OFF");
+    printf ("test  in progress      %s\n", localStatusWord.flags.testInProgress ? "YES" : "NO");
+    printf ("init  in progress      %s\n", localStatusWord.flags.initInProgress ? "YES" : "NO");
+    printf ("reset in progress      %s\n", localStatusWord.flags.resetInProgress ? "YES" : "NO");
+    printf ("power enabled          %s\n", localStatusWord.flags.powerEnabled ? "ENABLED" : "DISABLED");
+    printf ("health                 %s\n", localStatusWord.flags.health ? "BAD" : "GOOD");
+    printf ("diagnostics available  %s\n", localStatusWord.flags.diagnosticsAvailable ? "READY" : "NONE");
 
     printf ("\nPage 1 - M2 to SCS responses\n");
 
@@ -436,18 +438,18 @@ void    tiltState (const memMap *buffPtr)
     printf ("xtilt      Addr = %lx, Value = %f\n", (long) &buffPtr->page1.xTilt, buffPtr->page1.xTilt);
     printf ("ytilt      Addr = %lx, Value = %f\n", (long) &buffPtr->page1.yTilt, buffPtr->page1.yTilt);
     printf ("zfocus     Addr = %lx, Value = %f\n", (long) &buffPtr->page1.zFocus, buffPtr->page1.zFocus);
-    printf ("actuator1  Addr = %lx, Value = %f\n", (long) &buffPtr->page1.actuator1, buffPtr->page1.actuator1);
-    printf ("actuator2  Addr = %lx, Value = %f\n", (long) &buffPtr->page1.actuator2, buffPtr->page1.actuator2);
-    printf ("actuator3  Addr = %lx, Value = %f\n", (long) &buffPtr->page1.actuator3, buffPtr->page1.actuator3);
+    printf ("actuatorHeight0  Addr = %lx, Value = %f\n", (long) &buffPtr->page1.actuatorHeight0, buffPtr->page1.actuatorHeight0);
+    printf ("actuatorHeight1  Addr = %lx, Value = %f\n", (long) &buffPtr->page1.actuatorHeight1, buffPtr->page1.actuatorHeight1);
+    printf ("actuatorHeight2  Addr = %lx, Value = %f\n", (long) &buffPtr->page1.actuatorHeight2, buffPtr->page1.actuatorHeight2);
     printf ("inPosition Addr = %lx, Value = %ld\n", (long) &buffPtr->page1.inPosition, buffPtr->page1.inPosition);
     printf ("chopTrans  Addr = %lx, Value = %ld\n", (long) &buffPtr->page1.chopTransition, buffPtr->page1.chopTransition);
-    printf ("statusword Addr = %lx, Value = %x\n", (long) &buffPtr->page1.statusWord.all, buffPtr->page1.statusWord.all);
+    printf ("statusword Addr = %lx, Value = %x\n", (long) &buffPtr->page1.statusWord1, buffPtr->page1.statusWord1);
     printf ("heartbeat  Addr = %lx, Value = %ld\n", (long) &buffPtr->page1.heartbeat, buffPtr->page1.heartbeat);
     printf ("beamPosition   Addr = %lx, Value = %ld\n", (long) &buffPtr->page1.beamPosition, buffPtr->page1.beamPosition);
     printf ("xposition  Addr = %lx, Value = %f\n", (long) &buffPtr->page1.xPosition, buffPtr->page1.xPosition);
     printf ("yposition  Addr = %lx, Value = %f\n", (long) &buffPtr->page1.yPosition, buffPtr->page1.yPosition);
-    printf ("deployable Addr = %lx, Value = %ld\n", (long) &buffPtr->page1.deployBaffle, buffPtr->page1.deployBaffle);
-    printf ("central    Addr = %lx, Value = %ld\n", (long) &buffPtr->page1.centralBaffle, buffPtr->page1.centralBaffle);
+    printf ("deployable Addr = %lx, Value = %ld\n", (long) &buffPtr->page1.deployableBaffle, buffPtr->page1.deployableBaffle);
+    printf ("central    Addr = %lx, Value = %ld\n", (long) &buffPtr->page1.periscopeBaffle, buffPtr->page1.periscopeBaffle);
     printf ("encoderA   Addr = %lx, Value = %f\n", (long) &buffPtr->page1.baffleEncoderA, buffPtr->page1.baffleEncoderA);
     printf ("encoderB   Addr = %lx, Value = %f\n", (long) &buffPtr->page1.baffleEncoderB, buffPtr->page1.baffleEncoderB);
     printf ("encoderC   Addr = %lx, Value = %f\n", (long) &buffPtr->page1.baffleEncoderC, buffPtr->page1.baffleEncoderC);
@@ -819,18 +821,18 @@ void    printPage1 (const memMap * buffPtr)
     printf ("xtilt      Addr = %lx, Value = %f\n", (long) &buffPtr->page1.xTilt, buffPtr->page1.xTilt);
     printf ("ytilt      Addr = %lx, Value = %f\n", (long) &buffPtr->page1.yTilt, buffPtr->page1.yTilt);
     printf ("zfocus     Addr = %lx, Value = %f\n", (long) &buffPtr->page1.zFocus, buffPtr->page1.zFocus);
-    printf ("actuator1  Addr = %lx, Value = %f\n", (long) &buffPtr->page1.actuator1, buffPtr->page1.actuator1);
-    printf ("actuator2  Addr = %lx, Value = %f\n", (long) &buffPtr->page1.actuator2, buffPtr->page1.actuator2);
-    printf ("actuator3  Addr = %lx, Value = %f\n", (long) &buffPtr->page1.actuator3, buffPtr->page1.actuator3);
+    printf ("actuatorHeight0  Addr = %lx, Value = %f\n", (long) &buffPtr->page1.actuatorHeight0, buffPtr->page1.actuatorHeight0);
+    printf ("actuatorHeight1  Addr = %lx, Value = %f\n", (long) &buffPtr->page1.actuatorHeight1, buffPtr->page1.actuatorHeight1);
+    printf ("actuatorHeight2  Addr = %lx, Value = %f\n", (long) &buffPtr->page1.actuatorHeight2, buffPtr->page1.actuatorHeight2);
     printf ("inPosition Addr = %lx, Value = %ld\n", (long) &buffPtr->page1.inPosition, buffPtr->page1.inPosition);
     printf ("chopTrans  Addr = %lx, Value = %ld\n", (long) &buffPtr->page1.chopTransition, buffPtr->page1.chopTransition);
-    printf ("statusword Addr = %lx, Value = %x\n", (long) &buffPtr->page1.statusWord.all, buffPtr->page1.statusWord.all);
+    printf ("statusword Addr = %lx, Value = %x\n", (long) &buffPtr->page1.statusWord1, buffPtr->page1.statusWord1);
     printf ("heartbeat  Addr = %lx, Value = %ld\n", (long) &buffPtr->page1.heartbeat, buffPtr->page1.heartbeat);
     printf ("beamPosition   Addr = %lx, Value = %ld\n", (long) &buffPtr->page1.beamPosition, buffPtr->page1.beamPosition);
     printf ("xposition  Addr = %lx, Value = %f\n", (long) &buffPtr->page1.xPosition, buffPtr->page1.xPosition);
     printf ("yposition  Addr = %lx, Value = %f\n", (long) &buffPtr->page1.yPosition, buffPtr->page1.yPosition);
-    printf ("deployable Addr = %lx, Value = %ld\n", (long) &buffPtr->page1.deployBaffle, buffPtr->page1.deployBaffle);
-    printf ("central    Addr = %lx, Value = %ld\n", (long) &buffPtr->page1.centralBaffle, buffPtr->page1.centralBaffle);
+    printf ("deployable Addr = %lx, Value = %ld\n", (long) &buffPtr->page1.deployableBaffle, buffPtr->page1.deployableBaffle);
+    printf ("central    Addr = %lx, Value = %ld\n", (long) &buffPtr->page1.periscopeBaffle, buffPtr->page1.periscopeBaffle);
     printf ("encoderA   Addr = %lx, Value = %f\n", (long) &buffPtr->page1.baffleEncoderA, buffPtr->page1.baffleEncoderA);
     printf ("encoderB   Addr = %lx, Value = %f\n", (long) &buffPtr->page1.baffleEncoderB, buffPtr->page1.baffleEncoderB);
     printf ("encoderC   Addr = %lx, Value = %f\n", (long) &buffPtr->page1.baffleEncoderC, buffPtr->page1.baffleEncoderC);

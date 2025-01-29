@@ -377,9 +377,9 @@ long mechSim (struct genSubRecord * pgsub)
     m2Ptr->page1.xPosition = (float) xpout[0];
     m2Ptr->page1.yPosition = (float) ypout[0];
 
-    m2Ptr->page1.actuator1 = (float) position.actuator1;
-    m2Ptr->page1.actuator2 = (float) position.actuator2;
-    m2Ptr->page1.actuator3 = (float) position.actuator3;
+    m2Ptr->page1.actuatorHeight0 = (float) position.actuatorHeight0;
+    m2Ptr->page1.actuatorHeight1 = (float) position.actuatorHeight1;
+    m2Ptr->page1.actuatorHeight2 = (float) position.actuatorHeight2;
 
     /* m2Ptr->page1.inPosition = !coincidence;*/
     m2Ptr->page1.inPosition = coincidence;
@@ -396,9 +396,9 @@ long mechSim (struct genSubRecord * pgsub)
     *(double *) pgsub->vald = zout[0];
     *(double *) pgsub->vale = xpout[0];
     *(double *) pgsub->valf = ypout[0];
-    *(double *) pgsub->valg = position.actuator1;
-    *(double *) pgsub->valh = position.actuator2;
-    *(double *) pgsub->vali = position.actuator3;
+    *(double *) pgsub->valg = position.actuatorHeight0;
+    *(double *) pgsub->valh = position.actuatorHeight1;
+    *(double *) pgsub->vali = position.actuatorHeight2;
 
     /* ripple filter sample histories */
 

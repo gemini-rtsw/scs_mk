@@ -77,9 +77,9 @@
  *      < pgsub->valc   float   xTilt
  *      < pgsub->vald   float   yTilt
  *      < pgsub->vale   float   zFocus
- *      < pgsub->valf   float   actuator1
- *      < pgsub->valg   float   actuator2
- *      < pgsub->valh   float   actuator3
+ *      < pgsub->valf   float   actuatorHeight0
+ *      < pgsub->valg   float   actuatorHeight1
+ *      < pgsub->valh   float   actuatorHeight2
  *      < pgsub->vali   long    inPosition
  *      < pgsub->valj   long    chopTransition
  *      < pgsub->valk   long    statusWord
@@ -87,8 +87,8 @@
  *      < pgsub->valm   long    beamPosition
  *      < pgsub->valn   float   xPosition
  *      < pgsub->valo   float   yPosition
- *      < pgsub->valp   long    deployBaffle
- *      < pgsub->valq   long    centralBaffle
+ *      < pgsub->valp   long    deployableBaffle
+ *      < pgsub->valq   long    periscopeBaffle
  *      < pgsub->valr   float   baffleEncoderA
  *      < pgsub->vals   float   baffleEncoderB
  *      < pgsub->valt   float   baffleEncoderC
@@ -120,20 +120,22 @@ static int reallock1 = 0;
 static int reallock2 = 0;
 long    realDrive (struct genSubRecord * pgsub)
 {
+  bitFieldM2 localStatusWord;
 
     /* note sense reversal for in position, on ref mem 0 = in position */
   if (refMemFree ) {
     reallock1++;
     epicsMutexLock(refMemFree);
+    localStatusWord.all = (unsigned)scsPtr->page1.statusWord1;
 
     *(long *) pgsub->vala   = scsPtr->page1.checksum;
     *(long *) pgsub->valb   = scsPtr->page1.NR;
     *(double *) pgsub->valc = scsPtr->page1.xTilt;
     *(double *) pgsub->vald = scsPtr->page1.yTilt;
     *(double *) pgsub->vale = scsPtr->page1.zFocus;
-    *(double *) pgsub->valf = scsPtr->page1.actuator1;
-    *(double *) pgsub->valg = scsPtr->page1.actuator2;
-    *(double *) pgsub->valh = scsPtr->page1.actuator3;
+    *(double *) pgsub->valf = scsPtr->page1.actuatorHeight0;
+    *(double *) pgsub->valg = scsPtr->page1.actuatorHeight1;
+    *(double *) pgsub->valh = scsPtr->page1.actuatorHeight2;
     *(long *) pgsub->vali   = scsPtr->page1.inPosition;
 
     if (scsPtr->page1.chopTransition)
@@ -141,13 +143,13 @@ long    realDrive (struct genSubRecord * pgsub)
      else
         *(long *) pgsub->valj   = 1;
 
-    *(long *) pgsub->valk   = (long) scsPtr->page1.statusWord.all;
+    *(long *) pgsub->valk   = scsPtr->page1.statusWord1;
     *(long *) pgsub->vall   = scsPtr->page1.heartbeat;
     *(long *) pgsub->valm   = scsPtr->page1.beamPosition;
     *(double *) pgsub->valn = scsPtr->page1.xPosition;
     *(double *) pgsub->valo = scsPtr->page1.yPosition;
-    *(long *) pgsub->valp   = scsPtr->page1.deployBaffle;
-    *(long *) pgsub->valq   = scsPtr->page1.centralBaffle;
+    *(long *) pgsub->valp   = scsPtr->page1.deployableBaffle;
+    *(long *) pgsub->valq   = scsPtr->page1.periscopeBaffle;
     *(double *) pgsub->valr = scsPtr->page1.baffleEncoderA;
     *(double *) pgsub->vals = scsPtr->page1.baffleEncoderB;
     *(double *) pgsub->valt = scsPtr->page1.baffleEncoderC;
@@ -530,15 +532,17 @@ long    displayScs2 (struct genSubRecord * pgsub)
 /* ===================================================================== */
 long    statusDrive (struct genSubRecord * pgsub)
 {
+    bitFieldM2 localStatusWord;
 
     if (refMemFree ) {
       epicsMutexLock(refMemFree); 
+      localStatusWord.all = (unsigned)scsPtr->page1.statusWord1;
 
       /* read the m2 status word as bytes and put out to ports */
-      *(long *) pgsub->vala = (char) scsPtr->page1.statusWord.byte[3];
-      *(long *) pgsub->valb = (char) scsPtr->page1.statusWord.byte[2];
-      *(long *) pgsub->valc = (char) scsPtr->page1.statusWord.byte[1];
-      *(long *) pgsub->vald = (char) scsPtr->page1.statusWord.byte[0];
+      *(long *) pgsub->vala = (char) localStatusWord.byte[3];
+      *(long *) pgsub->valb = (char) localStatusWord.byte[2];
+      *(long *) pgsub->valc = (char) localStatusWord.byte[1];
+      *(long *) pgsub->vald = (char) localStatusWord.byte[0];
 
       /* read enclosure temperature */
       *(double *) pgsub->vale = scsPtr->page1.enclosureTemp;
