@@ -2458,6 +2458,7 @@ static int NsNrTolerance = 1;
 void scsReceive (void)
 {
    long simCheck = 0xabcd;
+   long simCheckCheck = 0xabcd;
    statusBlock localStatusBlock;
    bitFieldM2 localStatusWord;
    bitFieldM2 localscsptrStatusWord;
@@ -2514,6 +2515,7 @@ void scsReceive (void)
 
          simCheck = 
             checkSum ((void *) &localStatusBlock.NR, STATUS_BLOCK_SIZE);
+         simCheckCheck = localStatusBlock.checksum;
 
          /* for diagnostics, grab a whole frame with checksum */
 
@@ -3504,6 +3506,8 @@ epicsExportAddress(int, scsrx3a );
 epicsExportAddress(int, scsrx3b );
 epicsExportAddress(int, scsrx4 );
 epicsExportAddress(int, scsrx5 );
+epicsExportAddress(long, simCheck );
+epicsExportAddress(long, simCheckCheck );
 epicsExportAddress(int, NsNrTolerance );
 epicsExportAddress(int, isr2 );
 epicsExportAddress(int, isr3 );
