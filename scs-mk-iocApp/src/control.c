@@ -2455,8 +2455,8 @@ static int scsrx3b= 0;
 static int scsrx4= 0;
 static int scsrx5= 0;
 static int NsNrTolerance = 1;
-static long sCheckCheck = 0xabcd;
-static long sCheck = 0xabcd;
+static double sCheckCheck = 0xabcd;
+static double sCheck = 0xabcd;
 static int bpSimCheck = 0;
 void scsReceive (void)
 {
