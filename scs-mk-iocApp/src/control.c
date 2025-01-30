@@ -2455,10 +2455,12 @@ static int scsrx3b= 0;
 static int scsrx4= 0;
 static int scsrx5= 0;
 static int NsNrTolerance = 1;
+static long sCheckCheck = 0xabcd;
+static long sCheck = 0xabcd;
+static int bpSimCheck = 0;
 void scsReceive (void)
 {
    long simCheck = 0xabcd;
-   long simCheckCheck = 0xabcd;
    statusBlock localStatusBlock;
    bitFieldM2 localStatusWord;
    bitFieldM2 localscsptrStatusWord;
@@ -2515,7 +2517,8 @@ void scsReceive (void)
 
          simCheck = 
             checkSum ((void *) &localStatusBlock.NR, STATUS_BLOCK_SIZE);
-         simCheckCheck = localStatusBlock.checksum;
+         sCheck = simCheck;
+         sCheckCheck = localStatusBlock.checksum;
 
          /* for diagnostics, grab a whole frame with checksum */
 
@@ -2525,7 +2528,7 @@ void scsReceive (void)
             grab = 0;
          }
 
-         if (simCheck == localStatusBlock.checksum)
+         if (simCheck == localStatusBlock.checksum || bpSimCheck)
          {
              if (local.m2Heartbeat == localStatusBlock.heartbeat)
              {
@@ -3506,8 +3509,9 @@ epicsExportAddress(int, scsrx3a );
 epicsExportAddress(int, scsrx3b );
 epicsExportAddress(int, scsrx4 );
 epicsExportAddress(int, scsrx5 );
-epicsExportAddress(long, simCheck );
-epicsExportAddress(long, simCheckCheck );
+epicsExportAddress(long, sCheck );
+epicsExportAddress(long, sCheckCheck );
+epicsExportAddress(int, bpSimCheck );
 epicsExportAddress(int, NsNrTolerance );
 epicsExportAddress(int, isr2 );
 epicsExportAddress(int, isr3 );
