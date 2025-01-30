@@ -2476,6 +2476,7 @@ void scsReceive (void)
             scsrx2++; 
             //localStatusBlock = *(statusBlock *) & scsBase->page1;
             localStatusBlock = *page1gcb;
+	    scsBase->page1 = *page1gcb;
             localStatusWord.all = (unsigned)page1gcb->statusWord1;
 
             /* grab the engineering data for logging */
