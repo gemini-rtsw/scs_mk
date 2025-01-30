@@ -620,7 +620,7 @@ int gyro2m2 (location *position)
 /* INDENT ON */
 /* ===================================================================== */
 
-long    checkSum (void *ptr, int numLongs)
+long    checkSumLong (void *ptr, int numLongs)
 {
     long   *checkPtr = (long *) ptr;
     long    sum = 0;
@@ -632,6 +632,56 @@ long    checkSum (void *ptr, int numLongs)
     }
 
     return (sum);
+}
+
+/* ===================================================================== */
+/* INDENT OFF */
+/*
+ * Function name:
+ * checkSum
+ * 
+ * Purpose:
+ * Calculates the checksum over the given number of bytes assuming the
+ * block to consist entirely of type long
+ *
+ * Invocation:
+ * value = checkSum(*start, numLongs)
+ *
+ * Parameters in:
+ *      > start     *void   start address
+ *      > numLongs  int number of long words to sum
+ * 
+ * Parameters out:
+ * None
+ * 
+ * Return value:
+ *      < value     long    sum
+ *
+ * Globals: 
+ *  External functions:
+ *  None
+ * 
+ *  External variables:
+ *  None
+ * 
+ * Requirements:
+ * 
+ * 
+ */
+
+/* INDENT ON */
+/* ===================================================================== */
+static long checkSum(const void *ptr, size_t size)
+{
+    const unsigned char *bytePtr = (const unsigned char *)ptr;
+    long sum = 0;
+
+    for (size_t i = 0; i < size; i++)
+    {
+        sum += bytePtr[i];
+    }
+
+    return sum;
 }
 
 /* ===================================================================== */
