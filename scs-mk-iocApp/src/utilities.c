@@ -671,7 +671,7 @@ long    checkSumLong (void *ptr, int numLongs)
 
 /* INDENT ON */
 /* ===================================================================== */
-static long checkSum(const void *ptr, size_t size)
+long checkSum(const void *ptr, size_t size)
 {
     const unsigned char *bytePtr = (const unsigned char *)ptr;
     long sum = 0;

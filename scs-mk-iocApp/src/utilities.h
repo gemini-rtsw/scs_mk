@@ -323,7 +323,7 @@ int gyro2m2(location *position);
 
 long checkSumLong(void *ptr, int numLongs);
 
-static long checkSum(const void *ptr, size_t size);
+long checkSum(const void *ptr, size_t size);
 
 int date2secs(char * dateString);  /* used only in archive.c */
 
