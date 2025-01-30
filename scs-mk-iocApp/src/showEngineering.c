@@ -266,13 +266,13 @@ m2diags1++;
     act1[3] = ptr->m2Eng.kaman1;
     act1[4] = ptr->m2Eng.integ1;
 
-    act2[0] = ptr->page1.actuatorHeight2;
+    act2[0] = ptr->page1.actuatorHeight1;
     act2[1] = ptr->m2Eng.follow2;
     act2[2] = ptr->m2Eng.current2;
     act2[3] = ptr->m2Eng.kaman2;
     act2[4] = ptr->m2Eng.integ2;
 
-    act3[0] = ptr->page1.actuatorHeight3;
+    act3[0] = ptr->page1.actuatorHeight2;
     act3[1] = ptr->m2Eng.follow3;
     act3[2] = ptr->m2Eng.current3;
     act3[3] = ptr->m2Eng.kaman3;
@@ -319,8 +319,8 @@ m2diags5++;
 m2diags6++;
 
     if((fabs(position.actuatorHeight0-ptr->page1.actuatorHeight0) < (IN_POSITION_LIMIT+7)) &&
-            (fabs(position.actuatorHeight2-ptr->page1.actuatorHeight2) < (IN_POSITION_LIMIT+7)) &&
-            (fabs(position.actuatorHeight3-ptr->page1.actuatorHeight3) < (IN_POSITION_LIMIT+7))   )
+            (fabs(position.actuatorHeight1-ptr->page1.actuatorHeight1) < (IN_POSITION_LIMIT+7)) &&
+            (fabs(position.actuatorHeight2-ptr->page1.actuatorHeight2) < (IN_POSITION_LIMIT+7))   )
     {
         servoInPosition = 1;
     }

@@ -473,7 +473,7 @@ void    big (void)
     printf ("Command Block %d\n", sizeof (commandBlock));
     printf ("Command Block 0x%0x\n", sizeof (commandBlock));
 
-    printf ("m2 status word at %lx\n", (long) &scsPtr->page1.statusWord.all);
+    printf ("m2 status word at %lx\n", scsPtr->page1.statusWord1);
 }
 
 /* ===================================================================== */
