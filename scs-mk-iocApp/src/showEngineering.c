@@ -261,22 +261,22 @@ long    readM2Diagnostics (struct genSubRecord * pgsub)
     /* read data from m2 diagnostic page into local arrays */
 m2diags1++;
     act1[0] = ptr->page1.actuatorHeight0;
-    act1[1] = ptr->m2Eng.follow1;
-    act1[2] = ptr->m2Eng.current1;
-    act1[3] = ptr->m2Eng.kaman1;
-    act1[4] = ptr->m2Eng.integ1;
+    act1[1] = ptr->page1.followerError0;
+    act1[2] = ptr->page1.mirrorActuatorCurrent0;
+    act1[3] = ptr->page1.kam0;
+    act1[4] = ptr->page1.integrator1;
 
     act2[0] = ptr->page1.actuatorHeight1;
-    act2[1] = ptr->m2Eng.follow2;
-    act2[2] = ptr->m2Eng.current2;
-    act2[3] = ptr->m2Eng.kaman2;
-    act2[4] = ptr->m2Eng.integ2;
+    act2[1] = ptr->page1.followerError1;
+    act2[2] = ptr->page1.mirrorActuatorCurrent1;
+    act2[3] = ptr->page1.kam1;
+    act2[4] = ptr->page1.integrator2;
 
     act3[0] = ptr->page1.actuatorHeight2;
-    act3[1] = ptr->m2Eng.follow3;
-    act3[2] = ptr->m2Eng.current3;
-    act3[3] = ptr->m2Eng.kaman3;
-    act3[4] = ptr->m2Eng.integ3;
+    act3[1] = ptr->page1.followerError2;
+    act3[2] = ptr->page1.mirrorActuatorCurrent2;
+    act3[3] = ptr->page1.kam2;
+    act3[4] = ptr->page1.integrator3;
 m2diags2++;
 
     /* Tracking down the corrupted RM values. The following 
@@ -339,14 +339,14 @@ m2diags7++;
     *(long *) pgsub->valf = ptr->m2Eng.rawXTilt;
     *(long *) pgsub->valg = ptr->m2Eng.rawYTilt;
     *(long *) pgsub->valh = ptr->m2Eng.rawZFocus;
-    *(long *) pgsub->vali = ptr->m2Eng.NR;
+    *(long *) pgsub->vali = ptr->page1.NR;
 
     /* write progress of initialization to output port j */
-    *(long *) pgsub->valj = ptr->m2Eng.initState;
+    *(long *) pgsub->valj = ptr->page1.initialize_state;
 
     /* read last recorded M2 error from RM */
-    m2errs->sysid = (long)(ptr->m2Eng.errorSystem);
-    m2errs->code   = (long)(ptr->m2Eng.errorCode);
+    m2errs->sysid = (long)(ptr->page1.error_system_id);
+    m2errs->code   = (long)(ptr->page1.error_code);
 m2diags8++;
 
     /* based on these values, determine the error msg */
