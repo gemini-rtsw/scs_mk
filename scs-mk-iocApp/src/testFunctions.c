@@ -109,7 +109,7 @@ double vibfreq = 12.0;
 double vibamp = 1.0;
 double vibphase = 0.0;
 double guideSrate = 100.0;
-double guideSimDelay = 0.005; /* Delay ( 5 ms) */
+static double guideSimDelay = 0.005; /* Delay ( 5 ms) */
 
 void zeroMat(double mat[][1]) {
     int r,c;
@@ -1847,3 +1847,5 @@ epicsRegisterFunction(guideSimProc);
 epicsRegisterFunction(pulseSteerCAD);
 epicsRegisterFunction(CADfreeRun);
 epicsRegisterFunction(CADguideSimCont);
+
+epicsExportAddress(double, guideSimDelay );
