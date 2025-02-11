@@ -264,19 +264,19 @@ m2diags1++;
     act1[1] = ptr->page1.followerError0;
     act1[2] = ptr->page1.mirrorActuatorCurrent0;
     act1[3] = ptr->page1.kam0;
-    act1[4] = ptr->page1.integrator1;
+    act1[4] = ptr->page1.integratorX;
 
     act2[0] = ptr->page1.actuatorHeight1;
     act2[1] = ptr->page1.followerError1;
     act2[2] = ptr->page1.mirrorActuatorCurrent1;
     act2[3] = ptr->page1.kam1;
-    act2[4] = ptr->page1.integrator2;
+    act2[4] = ptr->page1.integratorY;
 
     act3[0] = ptr->page1.actuatorHeight2;
     act3[1] = ptr->page1.followerError2;
     act3[2] = ptr->page1.mirrorActuatorCurrent2;
     act3[3] = ptr->page1.kam2;
-    act3[4] = ptr->page1.integrator3;
+    act3[4] = ptr->page1.integratorZ;
 m2diags2++;
 
     /* Tracking down the corrupted RM values. The following 
