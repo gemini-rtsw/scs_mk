@@ -1785,11 +1785,17 @@ void processGuides (void)
              if (command > FAST_ONLY || indx > 1){
                  mutex7++;
                  rmIntSend (INT2, M2_NODE);
+                 /* Process the GCB record */
+                 memcpy(&(gcbSCSBase->scsData), &(scsBase->page0), sizeof(commandBlock));
+                 gcbProcess(gcbSCSBase);
                  indx = 0;
              }
          }
          else{
              rmIntSend (INT2, M2_NODE);
+             /* Process the GCB record */
+             memcpy(&(gcbSCSBase->scsData), &(scsBase->page0), sizeof(commandBlock));
+             gcbProcess(gcbSCSBase);
          } 
        }
        else /* simulation active, write to m2 buffer */
@@ -1951,9 +1957,6 @@ void processGuides (void)
       if (useDynamicVtk && checkGuideModeChange(sensedGuideRate) != ERROR) 
          guideInfo.rate = sensedGuideRate;
 
-      /* Process the GCB record */
-      memcpy(&(gcbSCSBase->scsData), &(scsBase->page0), sizeof(commandBlock));
-      gcbProcess(gcbSCSBase);
       procGuideCount10++; /*10*/
    } /* end for(;;) FOREVER*/
 }
