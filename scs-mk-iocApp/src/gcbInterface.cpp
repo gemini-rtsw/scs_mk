@@ -96,7 +96,7 @@ void initGCBStatusDataShare()
         return;
     }
     
-    gcb_sts_client->initDataSharing(page1gcb, rwPage1Sem, rxP1Trigger);
+    return gcb_sts_client->initDataSharing(page1gcb, rwPage1Sem, rxP1Trigger);
 }
 
 /*

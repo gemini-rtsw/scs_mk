@@ -42,8 +42,8 @@ drvVmi5588Config(0xA00000, 0x040000, 0xb0, 0x06)
 # Initialize all GCTB related infrastructure
 gcbInitCmdRecord $(CFGTOP):gcbCommand
 gcbInitStatusPVAClient m2ts:StatusRecord
-gcbInitStatusClientDataShare
-gcbStartStatusClientThread
+#gcbInitStatusClientDataShare
+#gcbStartStatusClientThread
 # initialise system, first xycom (via chopInit), then then rest.
 # Note: scsInit spawns processGuides which writes to the xycom if compiled
 # with the USR C FLAG for TIME_LATENCY, so chopInit goes first.

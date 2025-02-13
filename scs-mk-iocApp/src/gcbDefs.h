@@ -34,9 +34,11 @@ extern "C" {
     //extern void cmdBlockMutexUnlock();
     //extern void gcbStatusProcess(statusBlock *refmem);
     //extern void statusBlockTrigger();
+    extern int initGCBStatusDataShare();
     extern int externalReadThreadExitEventWait();
     extern int stsBlockEventWait();
     extern void stsBlockMutexLock();
+    extern void startGCBStatusClientThread();
     extern void stsBlockMutexUnlock();
     extern void threadCntAdd();
     extern void threadCntSubstract();

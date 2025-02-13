@@ -233,7 +233,12 @@ int scsInit (void)
    }
    /* Initialize the GCB memory space */
    if ((gcbSCSBase = (sharedMem *) malloc (sizeof(sharedMem))) == NULL) {
-       errlogMessage("malloc fail on creation of gcbSCSBase buffer\n");
+       printf("malloc fail on creation of gcbSCSBase buffer\n");
+       return (ERROR);
+   }
+   /* Initialize the GCB status record client */
+   if (!initGCBStatusDataShare()){
+       printf("Failed to initialize the GCB status record\n");
        return (ERROR);
    }
 
@@ -329,6 +334,9 @@ int scsInit (void)
    epicsThreadMustCreate("tfireLoops", epicsThreadPriorityLow,
                    epicsThreadGetStackSize(epicsThreadStackSmall),
                    (EPICSTHREADFUNC)fireLoops, (void *)NULL);
+
+   /* Start GCB Status monitor Thread */
+   startGCBStatusClientThread();
 
    return (OK);
 }
