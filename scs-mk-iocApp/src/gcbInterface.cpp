@@ -88,12 +88,12 @@ void initGCBStatusClientRec(std::string pvrName)
  * After it passes the pointers to the gcbClient to be assigned to
  * the proper attributes.
  * */
-void initGCBStatusDataShare()
+int initGCBStatusDataShare()
 {
     if(!gcb_sts_client)
     {
         std::cout << "The GCB Status client has not been initialized";
-        return;
+        return 1;
     }
     
     return gcb_sts_client->initDataSharing(page1gcb, rwPage1Sem, rxP1Trigger);
