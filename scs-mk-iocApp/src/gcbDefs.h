@@ -42,7 +42,6 @@ extern "C" {
     extern void stsBlockMutexUnlock();
     extern void threadCntAdd();
     extern void threadCntSubstract();
-    extern void triggerGCBfromC();
     extern void gcbProcess(sharedMem *refmem);
     extern void exitGracefully();
 #ifdef __cplusplus

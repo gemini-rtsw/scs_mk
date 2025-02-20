@@ -112,20 +112,6 @@ void startGCBStatusClientThread()
     gcb_sts_client->startThread();
 }
 
-/**
- *  @brief Function that will be accessed by
- *  the IOC's C infrastructure
- **/
-void triggerGCBfromC()
-{
-    if(!gcb_rec) {
-        throw std::runtime_error("gcbCommandRecord has not been created");
-        return;
-    }
-    std::cout << "Triggering the GCB record thread\n";
-    gcb_rec->trigger();
-}
-
 /*
  * @brief Execute the gcbCommandRecord method to write
  * the contents of the refMemory structure to the record fields
