@@ -238,7 +238,7 @@ int scsInit (void)
    }
    /* Initialize the GCB status record client */
    if (!initGCBStatusDataShare()){
-       printf("Failed to initialize the GCB status record\n");
+       printf("Failed to initialize the GCB status client\n");
        return (ERROR);
    }
 
@@ -318,6 +318,9 @@ int scsInit (void)
                     epicsThreadGetStackSize(epicsThreadStackBig),
                     (EPICSTHREADFUNC)processGuides, (void *)NULL);
 
+   /* Start GCB Status monitor Thread */
+   startGCBStatusClientThread();
+
    /* spawn communication tasks */  
    /* these had been medium priority for GS */
    epicsThreadMustCreate("tscsRx", epicsThreadPriorityHigh,
@@ -334,9 +337,6 @@ int scsInit (void)
    epicsThreadMustCreate("tfireLoops", epicsThreadPriorityLow,
                    epicsThreadGetStackSize(epicsThreadStackSmall),
                    (EPICSTHREADFUNC)fireLoops, (void *)NULL);
-
-   /* Start GCB Status monitor Thread */
-   startGCBStatusClientThread();
 
    return (OK);
 }
