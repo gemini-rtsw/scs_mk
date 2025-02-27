@@ -455,7 +455,7 @@ ss readRefMem
                 /* grab relevant data from the command buffer */
 
                 m2Deployable    = m2Ptr->page0.deployBaffle;
-                m2Central   = m2Ptr->page0.centralBaffle;
+                m2Central   = m2Ptr->page0.periscopeBaffle;
                 chopProfile = m2Ptr->page0.chopProfile;
                 chopFrequency   = m2Ptr->page0.chopFrequency;
 

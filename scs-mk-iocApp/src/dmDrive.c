@@ -258,7 +258,7 @@ long    real2Drive (struct genSubRecord * pgsub)
  *      < pgsub->valm   long    heartbeat
  *      < pgsub->valn   long    xDemand
  *      < pgsub->valo   long    yDemand
- *      < pgsub->valp   long    centralBaffle
+ *      < pgsub->valp   long    periscopeBaffle
  *      < pgsub->valq   long    deployBaffle
  *      < pgsub->valr   float   chopProfile
  *      < pgsub->vals   float   chopFrequency
@@ -312,7 +312,7 @@ long    displayScs (struct genSubRecord * pgsub)
         *(long *) pgsub->valm = m2Ptr->page0.heartbeat;
         *(double *) pgsub->valn = m2Ptr->page0.xDemand;
         *(double *) pgsub->valo = m2Ptr->page0.yDemand;
-        *(long *) pgsub->valp = m2Ptr->page0.centralBaffle;
+        *(long *) pgsub->valp = m2Ptr->page0.periscopeBaffle;
         *(long *) pgsub->valq = m2Ptr->page0.deployBaffle;
         *(long *) pgsub->valr = m2Ptr->page0.chopProfile;
         *(double *) pgsub->vals = m2Ptr->page0.chopFrequency;
@@ -344,7 +344,7 @@ long    displayScs (struct genSubRecord * pgsub)
             *(long *) pgsub->valm = scsBase->page0.heartbeat;
             *(double *) pgsub->valn = scsBase->page0.xDemand;
             *(double *) pgsub->valo = scsBase->page0.yDemand;
-            *(long *) pgsub->valp = scsBase->page0.centralBaffle;
+            *(long *) pgsub->valp = scsBase->page0.periscopeBaffle;
             *(long *) pgsub->valq = scsBase->page0.deployBaffle;
             *(long *) pgsub->valr = scsBase->page0.chopProfile;
             *(double *) pgsub->vals = scsBase->page0.chopFrequency;

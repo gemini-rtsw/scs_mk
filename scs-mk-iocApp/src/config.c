@@ -285,7 +285,7 @@ long    CADmoveBaffle (struct cadRecord * pcad)
             /* brought from SNL 08-FEB-2000 */
             epicsMutexLock(refMemFree);
             scsPtr->page0.deployBaffle  = (long)deployable;
-            scsPtr->page0.centralBaffle = (long)central;
+            scsPtr->page0.periscopeBaffle = (long)central;
             epicsMutexUnlock(refMemFree);
 
             
@@ -1998,7 +1998,7 @@ long    CADdriveOffloader (struct cadRecord * pcad)
  * CADdriveDB
  *
  * Purpose:
- * Receive and sanity check the deployable_baffle, dbsteps and dbafdir values.
+ * Receive and sanity check the dbsteps, pbaf and pbafdir values.
  * If successful they are written to the outputs.
  * 
  * Invocation:
@@ -2007,9 +2007,9 @@ long    CADdriveOffloader (struct cadRecord * pcad)
  *
  * Parameters: ( ">" input, "!" modified, "<" output)
  *  > pcad->dir *string CAD directive
- *  > pcad->a   *string deployable_baffle
- *  > pcad->b   *string dbafdir
- *  > pcad->c   *string dbsteps
+ *  > pcad->a   *string dbsteps
+ *  > pcad->b   *string pbafdir
+ *  > pcad->c   *string pbaf
  *
  *  < pcd->mess *string status message
  *
@@ -2038,7 +2038,7 @@ long    CADdriveDB (struct cadRecord * pcad)
 {
     long    status = CAD_ACCEPT;
     char    dumpString[MAX_STRING_SIZE];
-    static  long deployable_baffle, dbafdir, dbsteps;
+    static  long dbsteps, pbafdir, pbaf;
 
     cadDirLog ("driveDB", pcad->dir, 5, pcad);
 
@@ -2054,30 +2054,30 @@ long    CADdriveDB (struct cadRecord * pcad)
 
         /* convert the input strings to numbers for checking */
 
-        if (sscanf (pcad->a, "%ld%s", &deployable_baffle, dumpString) != 1)
+        if (sscanf (pcad->a, "%ld%s", &dbsteps, dumpString) != 1)
         {
-            strncpy(pcad->mess, "deployable_baffle fail conversion", MAX_STRING_SIZE - 1);
+            strncpy(pcad->mess, "dbsteps fail conversion", MAX_STRING_SIZE - 1);
             status = CAD_REJECT;
             break;
         }
-        if(sscanf (pcad->b, "%ld%s", &dbafdir, dumpString) != 1)
+        if(sscanf (pcad->b, "%ld%s", &pbafdir, dumpString) != 1)
         {
             strncpy(pcad->mess, "direction fail conversion", MAX_STRING_SIZE - 1);
             status = CAD_REJECT;
             break;
         }
-        if(sscanf (pcad->c, "%ld%s", &dbsteps, dumpString) != 1)
+        if(sscanf (pcad->c, "%ld%s", &pbaf, dumpString) != 1)
         {
             strncpy(pcad->mess, "using default #steps", MAX_STRING_SIZE - 1);
-            dbsteps = STEPS_DEFAULT;
+            pbaf = STEPS_DEFAULT;
         }
-        if ((dbafdir != UP) && (dbafdir != DOWN))
+        if ((pbafdir != UP) && (pbafdir != DOWN))
         {
             strncpy (pcad->mess, "bad direction", MAX_STRING_SIZE - 1);
             status = CAD_REJECT;
             break;
         }
-        if ((deployable_baffle < FIRST_DBAF) || (deployable_baffle > LAST_DBAF))
+        if ((dbsteps < FIRST_DBAF) || (dbsteps > LAST_DBAF))
         {
             strncpy (pcad->mess, "bad deployable baffle number", MAX_STRING_SIZE - 1);
             status = CAD_REJECT;
@@ -2092,17 +2092,17 @@ long    CADdriveDB (struct cadRecord * pcad)
         {
             epicsMutexLock(refMemFree);
             /* Note: should be long already from database */
-            scsPtr->page0.deployable_baffle      = (long) deployable_baffle;
-            scsPtr->page0.dbafdir = (long) dbafdir;
-            scsPtr->page0.dbsteps = (long) dbsteps;
+            scsPtr->page0.dbsteps      = (long) dbsteps;
+            scsPtr->page0.pbafdir = (long) pbafdir;
+            scsPtr->page0.pbaf = (long) pbaf;
             epicsMutexUnlock(refMemFree);
 
             writeCommand(DBDRV);
 
             if ((debugLevel > DEBUG_MIN) & (debugLevel <= DEBUG_MED))
                 printf(
-                "sent command %2d to drive deployable_baffle %1d %d steps in direction %1d\n", 
-                DBDRV, (int)deployable_baffle, (int)dbsteps, (int)dbafdir);
+                "sent command %2d to drive dbsteps %1d %d steps in direction %1d\n", 
+                DBDRV, (int)dbsteps, (int)pbaf, (int)pbafdir);
        
         }
         else
@@ -2129,7 +2129,7 @@ long    CADdriveDB (struct cadRecord * pcad)
  * CADdriveCB
  *
  * Purpose:
- * Receive and sanity check the cbafdir and cbsteps values.
+ * Receive and sanity check the deployable_baffle and dbafdir values.
  * If successful they are written to the outputs.
  * 
  * Invocation:
@@ -2138,8 +2138,8 @@ long    CADdriveDB (struct cadRecord * pcad)
  *
  * Parameters: ( ">" input, "!" modified, "<" output)
  *  > pcad->dir *string CAD directive
- *  > pcad->a   *string cbafdir
- *  > pcad->b   *string cbsteps
+ *  > pcad->a   *string deployable_baffle
+ *  > pcad->b   *string dbafdir
  *
  *  < pcd->mess *string status message
  *
@@ -2168,7 +2168,7 @@ long    CADdriveCB(struct cadRecord * pcad)
 {
     long    status = CAD_ACCEPT;
     char    dumpString[MAX_STRING_SIZE];
-    static  long cbafdir, cbsteps;
+    static  long deployable_baffle, dbafdir;
 
     cadDirLog ("driveCB", pcad->dir, 5, pcad);
 
@@ -2184,18 +2184,18 @@ long    CADdriveCB(struct cadRecord * pcad)
 
         /* convert the input strings to numbers for checking */
 
-        if(sscanf (pcad->a, "%ld%s", &cbafdir, dumpString) != 1)
+        if(sscanf (pcad->a, "%ld%s", &deployable_baffle, dumpString) != 1)
         {
             strncpy(pcad->mess, "direction fail conversion", MAX_STRING_SIZE - 1);
             status = CAD_REJECT;
             break;
         }
-        if(sscanf (pcad->b, "%ld%s", &cbsteps, dumpString) != 1)
+        if(sscanf (pcad->b, "%ld%s", &dbafdir, dumpString) != 1)
         {
             strncpy(pcad->mess, "using default #steps", MAX_STRING_SIZE - 1);
-            cbsteps = STEPS_DEFAULT;
+            dbafdir = STEPS_DEFAULT;
         }
-        if ((cbafdir != OPEN) && (cbafdir != CLOSE))
+        if ((deployable_baffle != OPEN) && (deployable_baffle != CLOSE))
         {
             strncpy (pcad->mess, "bad direction", MAX_STRING_SIZE - 1);
             status = CAD_REJECT;
@@ -2210,8 +2210,8 @@ long    CADdriveCB(struct cadRecord * pcad)
         {
             epicsMutexLock(refMemFree);
             /* Note: should be long already from database */
-            scsPtr->page0.cbafdir = (long) cbafdir;
-            scsPtr->page0.cbsteps = (long) cbsteps;
+            scsPtr->page0.deployable_baffle = (long) deployable_baffle;
+            scsPtr->page0.dbafdir = (long) dbafdir;
             epicsMutexUnlock(refMemFree);
 
             writeCommand(CBDRV);
@@ -2219,7 +2219,7 @@ long    CADdriveCB(struct cadRecord * pcad)
             if ((debugLevel > DEBUG_MIN) & (debugLevel <= DEBUG_MED))
                 printf(
                 "sent command %2d to drive central baffle %d steps in direction %1d\n", 
-                CBDRV, (int)cbsteps, (int)cbafdir);
+                CBDRV, (int)dbafdir, (int)deployable_baffle);
        
         }
         else
@@ -2934,7 +2934,7 @@ long    CADmovePeriscope (struct cadRecord * pcad)
         {
             /* brought from SNL 08-FEB-2000 */
             epicsMutexLock(refMemFree);
-            scsPtr->page0.centralBaffle = (long)periscope;
+            scsPtr->page0.periscopeBaffle = (long)periscope;
             epicsMutexUnlock(refMemFree);
 
             writeCommand(BAFFLE_CHANGE);

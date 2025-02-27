@@ -1760,7 +1760,7 @@ ss CADprocessor {
                 scsBase->page0.zFocusGuide = 0.0; 
                 scsBase->page0.xDemand = moveXPosition;
                 scsBase->page0.yDemand = moveYPosition;
-                scsBase->page0.centralBaffle = 0; 
+                scsBase->page0.periscopeBaffle = 0; 
                 scsBase->page0.deployBaffle = 0;
                 scsBase->page0.chopProfile = 0;
                 scsBase->page0.chopFrequency = 0.0;
@@ -1794,11 +1794,11 @@ ss CADprocessor {
                 scsBase->page0.offloader = 0;
                 scsBase->page0.ofldir = 0;
                 scsBase->page0.offloadersteps = 0;
-                scsBase->page0.cbafdir = 0;
-                scsBase->page0.cbsteps = 0;
                 scsBase->page0.deployable_baffle = 0;
                 scsBase->page0.dbafdir = 0;
                 scsBase->page0.dbsteps = 0;
+                scsBase->page0.pbafdir = 0;
+                scsBase->page0.pbaf = 0;
                 scsBase->page0.xy_motor = 0;
                 scsBase->page0.xydir = 0;
                 scsBase->page0.xysteps = 0;

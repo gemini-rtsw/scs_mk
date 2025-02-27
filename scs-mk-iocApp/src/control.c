@@ -2130,7 +2130,7 @@ void slowTransmit (void)
             scsBase->page0.yDemand = lockPosition.yPos;
          }
 
-         scsBase->page0.centralBaffle = localPtr->centralBaffle;
+         scsBase->page0.periscopeBaffle = localPtr->periscopeBaffle;
          scsBase->page0.deployBaffle = localPtr->deployBaffle;
          scsBase->page0.chopProfile = localPtr->chopProfile;
          scsBase->page0.chopFrequency = localPtr->chopFrequency;
@@ -2164,11 +2164,11 @@ void slowTransmit (void)
          scsBase->page0.offloader = localPtr->offloader;
          scsBase->page0.ofldir = localPtr->ofldir;
          scsBase->page0.offloadersteps = localPtr->offloadersteps;
-         scsBase->page0.cbafdir = localPtr->cbafdir;
-         scsBase->page0.cbsteps = localPtr->cbsteps;
          scsBase->page0.deployable_baffle = localPtr->deployable_baffle;
          scsBase->page0.dbafdir = localPtr->dbafdir;
          scsBase->page0.dbsteps = localPtr->dbsteps;
+         scsBase->page0.pbafdir = localPtr->pbafdir;
+         scsBase->page0.pbaf = localPtr->pbaf;
          scsBase->page0.xy_motor = localPtr->xy_motor;
          scsBase->page0.xydir = localPtr->xydir;
          scsBase->page0.xysteps = localPtr->xysteps;
@@ -2242,7 +2242,7 @@ void slowTransmit (void)
             m2Ptr->page0.yDemand = lockPosition.yPos;
          }
 
-         m2Ptr->page0.centralBaffle = localPtr->centralBaffle;
+         m2Ptr->page0.periscopeBaffle = localPtr->periscopeBaffle;
          m2Ptr->page0.deployBaffle = localPtr->deployBaffle;
          m2Ptr->page0.chopProfile = localPtr->chopProfile;
          m2Ptr->page0.chopFrequency = localPtr->chopFrequency;
