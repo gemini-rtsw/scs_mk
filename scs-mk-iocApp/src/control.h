@@ -169,7 +169,7 @@ typedef struct
     long            heartbeat;
     float           xDemand;
     float           yDemand;
-    long            centralBaffle;
+    long            periscopeBaffle;
     long            deployBaffle;
     long            chopProfile;
     float           chopFrequency;
@@ -179,7 +179,7 @@ typedef struct
     float           zFocusTolerance;
     float           xPositionTolerance;
     float           yPositionTolerance;
-    float           bandwidth;
+    long            bandwidth;
     float           xTiltGain;
     float           yTiltGain;
     float           zFocusGain;
@@ -203,11 +203,11 @@ typedef struct
     long            offloader;
     long            ofldir;
     long            offloadersteps;
-    long            cbafdir;
-    long            cbsteps;
     long            deployable_baffle;
     long            dbafdir;
     long            dbsteps;
+    long            pbafdir;
+    long            pbaf;
     long            xy_motor;
     long            xydir;
     long            xysteps;

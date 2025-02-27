@@ -3559,7 +3559,7 @@ ss CADprocessor {
             if(refMemFree)
             {
                epicsMutexLock(refMemFree);
-               scsPtr->page0.bandwidth = bandwidth;
+               scsPtr->page0.bandwidth = (long)bandwidth;
                epicsMutexUnlock(refMemFree);
             }
             else
