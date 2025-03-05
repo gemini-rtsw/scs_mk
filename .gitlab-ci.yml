@@ -46,13 +46,34 @@ build:
     # Show git hash for debugging
     - git rev-parse --short HEAD || echo "Failed to get git hash"
     
-    # Run build_rpm.sh
+    # Create debug script
+    - chmod +x debug_builddep.sh
+    
+    # Run build_rpm.sh with debugging enabled
     - chmod +x build_rpm.sh
     - |
       if [ "${IS_PROD}" = "true" ]; then
-        ./build_rpm.sh --prod
+        bash -x ./build_rpm.sh --prod || {
+          echo "Build failed, running debug script..."
+          docker run --rm -v $(pwd):/work -w /work rockylinux:8 /bin/bash -c "
+            dnf install -y dnf-plugins-core epel-release && 
+            dnf config-manager --set-enabled powertools && 
+            chmod +x /work/debug_builddep.sh && 
+            /work/debug_builddep.sh /work/scs_mk.spec
+          "
+          exit 1
+        }
       else
-        ./build_rpm.sh
+        bash -x ./build_rpm.sh || {
+          echo "Build failed, running debug script..."
+          docker run --rm -v $(pwd):/work -w /work rockylinux:8 /bin/bash -c "
+            dnf install -y dnf-plugins-core epel-release && 
+            dnf config-manager --set-enabled powertools && 
+            chmod +x /work/debug_builddep.sh && 
+            /work/debug_builddep.sh /work/scs_mk.spec
+          "
+          exit 1
+        }
       fi
     
     # Install required tools

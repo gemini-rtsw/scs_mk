@@ -90,8 +90,9 @@ gpgcheck=0" > /etc/yum.repos.d/gitlab-rpm-repo.repo && \
         fi &&
 
         # Create a temporary spec file with modified Release
-        TMP_SPEC=$(mktemp) &&
+        TMP_SPEC="/tmp/${SPEC_FILE}.tmp" &&
         cp $SPEC_FILE $TMP_SPEC &&
+        chmod 644 $TMP_SPEC &&
         
         # Extract current Release from spec file
         RELEASE=$(grep "^Release:" $TMP_SPEC | awk "{print \$2}") &&
@@ -110,7 +111,20 @@ gpgcheck=0" > /etc/yum.repos.d/gitlab-rpm-repo.repo && \
         cat $TMP_SPEC &&
 
         # Install build dependencies from spec file
-        dnf builddep -y $TMP_SPEC &&
+        echo "Checking if spec file exists: $TMP_SPEC" &&
+        ls -la $TMP_SPEC &&
+        echo "Contents of spec file:" &&
+        cat $TMP_SPEC &&
+        echo "Enabling source repositories..." &&
+        dnf config-manager --set-enabled appstream-source baseos-source powertools-source epel-source &&
+        echo "Installing build dependencies..." &&
+        (dnf builddep -y $TMP_SPEC || {
+            echo "Failed to install build dependencies with dnf builddep. Trying manual installation..."
+            # Extract BuildRequires from spec file
+            BUILD_DEPS=$(grep "^BuildRequires:" $TMP_SPEC | sed 's/BuildRequires://g' | tr -d '\n')
+            echo "Attempting to install: $BUILD_DEPS"
+            dnf install -y $BUILD_DEPS || true
+        }) &&
 
         # Extract version from spec file
         PACKAGE_VERSION=$(grep "^Version:" $TMP_SPEC | awk "{print \$2}") &&
