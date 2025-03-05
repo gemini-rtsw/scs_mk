@@ -64,11 +64,6 @@ cp -r dbd $RPM_BUILD_ROOT/%{_prefix}/%{name}
 cp -r db $RPM_BUILD_ROOT/%{_prefix}/%{name}
 cp -r bin $RPM_BUILD_ROOT/%{_prefix}/%{name}
 cp -r configure $RPM_BUILD_ROOT/%{_prefix}/%{name}
-# Add include directory for devel package
-if [ -d include ]; then
-    cp -r include $RPM_BUILD_ROOT/%{_prefix}/%{name}
-fi
-
 
 %postun
 if [ "$1" = "0" ]; then
@@ -88,6 +83,6 @@ rm -rf $RPM_BUILD_ROOT
 
 %files devel
 %defattr(-,root,root)
-   /%{_prefix}/%{name}/include
+   # No files needed for devel package, just dependencies
 
 %changelog
