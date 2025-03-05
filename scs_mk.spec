@@ -3,7 +3,6 @@
 %define repository gemdev
 %define debug_package %{nil}
 %define arch %(uname -m)
-%define checkout %(git log --pretty=format:'%h' -n 1) 
 
 #These global defines are added to prevent stripping
 # symbols on vxWorks cross-compiled code
@@ -19,7 +18,7 @@
 Summary: %{name} Package, a module for EPICS base
 Name: %{name}
 Version: 2.9
-Release: 8%{?dist}
+Release: 8.static%{?dist}
 License: EPICS Open License
 Group: Applications/Engineering
 Source0: %{name}-%{version}.tar.gz

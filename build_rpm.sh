@@ -89,39 +89,21 @@ gpgcheck=0" > /etc/yum.repos.d/gitlab-rpm-repo.repo && \
             exit 1
         fi &&
 
-        # Create a temporary spec file with modified Release
-        TMP_SPEC="/tmp/${SPEC_FILE}.tmp" &&
-        cp $SPEC_FILE $TMP_SPEC &&
-        chmod 644 $TMP_SPEC &&
+        # Use the original spec file directly
+        echo "Using original spec file: $SPEC_FILE" &&
         
-        # Extract current Release from spec file
-        RELEASE=$(grep "^Release:" $TMP_SPEC | awk "{print \$2}") &&
-        if [ -z "$RELEASE" ]; then
-            # If no Release field, add one
-            echo "No Release field found, adding one with git hash" &&
-            sed -i "/^Version:/a Release: 1.git'$GIT_HASH'%{?dist}" $TMP_SPEC
-        else
-            # If Release field exists, append git hash to it
-            echo "Modifying Release field to include git hash" &&
-            sed -i "s/^Release: .*/Release: 1.git'$GIT_HASH'%{?dist}/" $TMP_SPEC
-        fi &&
-        
-        # Show the modified spec file
-        echo "Modified spec file:" &&
-        cat $TMP_SPEC &&
+        # Show the spec file
+        echo "Spec file contents:" &&
+        cat $SPEC_FILE &&
 
         # Install build dependencies from spec file
-        echo "Checking if spec file exists: $TMP_SPEC" &&
-        ls -la $TMP_SPEC &&
-        echo "Contents of spec file:" &&
-        cat $TMP_SPEC &&
         echo "Enabling source repositories..." &&
         dnf config-manager --set-enabled appstream-source baseos-source powertools-source epel-source &&
         echo "Installing build dependencies..." &&
-        dnf builddep -y $TMP_SPEC &&
+        dnf builddep -y $SPEC_FILE &&
 
         # Extract version from spec file
-        PACKAGE_VERSION=$(grep "^Version:" $TMP_SPEC | awk "{print \$2}") &&
+        PACKAGE_VERSION=$(grep "^Version:" $SPEC_FILE | awk "{print \$2}") &&
         echo "Package version: $PACKAGE_VERSION" &&
 
         # Create source directory and tarball with correct structure
@@ -132,7 +114,7 @@ gpgcheck=0" > /etc/yum.repos.d/gitlab-rpm-repo.repo && \
         ls -l /root/rpmbuild/SOURCES/ &&
         
         make &&
-        rpmbuild -ba $TMP_SPEC &&
+        rpmbuild -ba $SPEC_FILE &&
         
         # Show what was built
         ls -l /root/rpmbuild/RPMS/x86_64/ &&
