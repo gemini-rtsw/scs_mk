@@ -38,7 +38,7 @@ This is the module %{name}.
 %package devel
 Summary: %{name}-devel Package
 Group: Development/Gemini
-Requires: %{name} tdct sequencer-devel autosave-devel  bancomm-devel geminiRec-devel timelib-devel slalib-devel xycom-devel gemUtil-devel timeProbe-devel tcslib-devel pvload-devel symb-devel vmi5588-devel
+Requires: %{name} epics-base-devel tdct re2c sequencer-devel autosave-devel  bancomm-devel geminiRec-devel timelib-devel slalib-devel xycom-devel gemUtil-devel timeProbe-devel tcslib-devel pvload-devel symb-devel vmi5588-devel
 %description devel
 This is the module %{name}.
 
@@ -64,6 +64,10 @@ cp -r dbd $RPM_BUILD_ROOT/%{_prefix}/%{name}
 cp -r db $RPM_BUILD_ROOT/%{_prefix}/%{name}
 cp -r bin $RPM_BUILD_ROOT/%{_prefix}/%{name}
 cp -r configure $RPM_BUILD_ROOT/%{_prefix}/%{name}
+# Add include directory for devel package
+if [ -d include ]; then
+    cp -r include $RPM_BUILD_ROOT/%{_prefix}/%{name}
+fi
 
 
 %postun
@@ -82,8 +86,8 @@ rm -rf $RPM_BUILD_ROOT
    /%{_prefix}/%{name}/dbd
    /%{_prefix}/%{name}/configure
 
-#%files devel
-#%defattr(-,root,root)
-#   /%{_prefix}/%{name}/include
+%files devel
+%defattr(-,root,root)
+   /%{_prefix}/%{name}/include
 
 %changelog
