@@ -118,13 +118,7 @@ gpgcheck=0" > /etc/yum.repos.d/gitlab-rpm-repo.repo && \
         echo "Enabling source repositories..." &&
         dnf config-manager --set-enabled appstream-source baseos-source powertools-source epel-source &&
         echo "Installing build dependencies..." &&
-        (dnf builddep -y $TMP_SPEC || {
-            echo "Failed to install build dependencies with dnf builddep. Trying manual installation..."
-            # Extract BuildRequires from spec file
-            BUILD_DEPS=$(grep "^BuildRequires:" $TMP_SPEC | sed 's/BuildRequires://g' | tr -d '\n')
-            echo "Attempting to install: $BUILD_DEPS"
-            dnf install -y $BUILD_DEPS || true
-        }) &&
+        dnf builddep -y $TMP_SPEC &&
 
         # Extract version from spec file
         PACKAGE_VERSION=$(grep "^Version:" $TMP_SPEC | awk "{print \$2}") &&
