@@ -1,14 +1,14 @@
 $(LINUX_ONLY)#!${INSTALL}/bin/${ARCH}/scs-mk-ioc
 
-cd ../..
-
+#cd ../..
+epicsEnvSet("EPICS_TS_NTP_CONF_FILE","/rtconfig/ntp/ntp-10.2.50.10.conf")
 nfsMount("$(CFGSERVER)","$(CFGREMOTE)","$(CFGLOCAL)")
 
 epicsEnvSet "IOCSH_PS1" "scs-mk-ioc>"
 #epicsEnvSet "EPICS_CA_ADDR_LIST" "10.1.2.175"
 #epicsEnvSet "EPICS_CA_AUTO_ADDR_LIST" "NO"
 
-bspExtVerbosity=0
+# bspExtVerbosity=0
 ## Register all support components
 dbLoadDatabase("dbd/scs-mk-ioc.dbd")
 scs_mk_ioc_registerRecordDeviceDriver(pdbbase)
@@ -16,8 +16,8 @@ scs_mk_ioc_registerRecordDeviceDriver(pdbbase)
 ## Load record instances
 dbLoadRecords("db/m2.db")
 dbLoadRecords("db/m2sad.db")
-# dbLoadRecords("db/iocAdminRTEMS.db"," IOC=m2:iocStats,TODFORMAT=%m/%d/%Y %H:%M:%S")
-dbLoadRecords("db/timeProbe.db","top=m2:")
+# dbLoadRecords("db/iocAdminRTEMS.db"," IOC=m2v:iocStats,TODFORMAT=%m/%d/%Y %H:%M:%S")
+dbLoadRecords("db/timeProbe.db","top=m2v:")
 
 # Configure BANCOMM card
 # - set the bc635 Time Provider priority to something other than the default
@@ -57,7 +57,7 @@ iocInit
 #CADlogging = 1
 
 #startGuideSim
-dbpf "m2:interlockOverride","1"
+dbpf "m2v:interlockOverride","1"
 
 ##M2TS TTL SERVO ON Card0, PORT7, Bit 1, HIGH #####
 #xy240_writePortBit (0,7,1,1)
@@ -65,19 +65,19 @@ dbpf "m2:interlockOverride","1"
 ##M2TS CEM POWER ON Card0, PORT7, Bit 0, HIGH #####
 #xy240_writePortBit (0,7,0,1)
 
-dbpf "m2:guideConfigReset.DIR","0"
+dbpf "m2v:guideConfigReset.DIR","0"
 ###### Start any sequence programs
-seq &timeSeq, "sys=m2:, top=tcs:"
-seq &tilt_st, "S=m2:tilt:, debug=0"
-seq &scs_st, "T=m2:, D=m2:, F=m2:, I=m2:inst:"
+seq &timeSeq, "sys=m2v:, top=tcs:"
+seq &tilt_st, "S=m2v:tilt:, debug=0"
+seq &scs_st, "T=m2v:, D=m2v:, F=m2v:, I=m2v:inst:"
 
-####dbpr "m2:interlock"
+####dbpr "m2v:interlock"
 ##### Comment out during testing signal from GIS:
 ####
-dbpf "m2:guideConfigReset.DIR","2"
-dbpf "m2:guideConfigReset.DIR","3"
+dbpf "m2v:guideConfigReset.DIR","2"
+dbpf "m2v:guideConfigReset.DIR","3"
 
-dbpf "m2:setController.DIR","2"
-dbpf "m2:setController.DIR","3"
+dbpf "m2v:setController.DIR","2"
+dbpf "m2v:setController.DIR","3"
 
 

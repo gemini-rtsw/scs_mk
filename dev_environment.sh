@@ -66,7 +66,7 @@ else
         echo "Creating /gem_test directory..."
         sudo mkdir -p /gem_test
     fi
-    MOUNT_GEM_TEST="-v /gem_test:/gem_test"
+    MOUNT_GEM_TEST="-v /gem_test:/gem_test -v /gem_prod:/gem_prod"
     STARTUP_CMD="bash -l"
 fi
 

@@ -73,8 +73,8 @@
 #include <subRecord.h>
 #endif
 
-// #define SCSTOP "top = m2:"
-// #define INSTTOP "I = m2:inst:"
+// #define SCSTOP "top = m2v:"
+// #define INSTTOP "I = m2v:inst:"
 
 static int loggingEnable = ON;
 
