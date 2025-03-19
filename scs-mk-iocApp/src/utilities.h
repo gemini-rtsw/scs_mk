@@ -319,6 +319,8 @@ int m22tcs(location *position);
 
 int gaos2m2(location *position);
 
+int rebootVME();
+
 int gyro2m2(location *position);
 
 long checkSum(void *ptr, int numLongs);
