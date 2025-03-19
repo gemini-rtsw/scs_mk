@@ -4463,8 +4463,11 @@ ss rebootScs {
      /*vmi5588_reboot(NULL);*/
 
          /* %%reboot(BOOT_QUICK_AUTOBOOT); */
-	 rebootIocStat = REBOOT_VALUE;
-	 pvPut(rebootIocStat);
+	 /*rebootIocStat = REBOOT_VALUE;
+	 pvPut(rebootIocStat);*/
+    
+    printf("rebootNow - Sendind shutdown command\n");
+    %%rebootVME();
 	 
 
          /* At this point the system shall reboot so no further code */
