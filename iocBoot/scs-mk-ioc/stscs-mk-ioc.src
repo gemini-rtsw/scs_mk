@@ -23,13 +23,13 @@ dbLoadRecords("db/timeProbe.db","top=m2v:")
 # - set the bc635 Time Provider priority to something other than the default
 # or set it to a negative value to disable the bc635 Time Provider
 # Must be called before BCconfigure
-bc635TimeSetTpPrio (60)
+# bc635TimeSetTpPrio (60)
 
 #Set the Bancomm master in RTC ("A3") Mode
 #bcUseRTCMode()
 
 # - Master ? Simulate ? intPerSecond, intPerTick, timeOffset (microsec)
-BCconfigure (0, 0, 1000, 1, 0)
+# BCconfigure (0, 0, 1000, 1, 0)
 
 # initialise the xycom 240
 drvXy240ConfigOutputInit(1, 32, 0xd000, 0x0000, 0x0003)

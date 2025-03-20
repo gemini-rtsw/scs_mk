@@ -194,6 +194,7 @@
       static double   xyDeadband;
 
       static long     myOldGuideSimState = 0;
+      int loadComplete;
 
    }%
 
