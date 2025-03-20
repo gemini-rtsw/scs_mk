@@ -73,6 +73,9 @@
 #include <subRecord.h>
 #endif
 
+#include <rtems.h>
+#include <rtems/shell.h>
+
 // #define SCSTOP "top = m2v:"
 // #define INSTTOP "I = m2v:inst:"
 
