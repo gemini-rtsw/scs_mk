@@ -88,7 +88,7 @@ int pvload(char *file, char *subset, int flags, int noAbort);
 int debugLevel = DEBUG_NONE;
 long inPosition = 0;
 frameChange *ag2m2[MAX_SOURCES];
-int loadComplete = 0; /* Definition for loadComplete variable */
+//int loadComplete = 0; /* Definition for loadComplete variable */
 
 /* not used anywhere. 20171019 MDW */
 //SEM_ID compileStatus = NULL; 
