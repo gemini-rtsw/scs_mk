@@ -985,9 +985,9 @@ int loadInitFiles(void*p)
       errlogPrintf("pvload initialisation data\n");
 
       if(pvload(XSTR(CFGLOCAL) "/SCSinit.pv", "top=" XSTR(CFGTOP) ":", 0, 0) != OK)
-         errlogPrintf("pvload error SCSinit.pv\n");
+         errlogPrintf("pvload error SCSinit.pv top:%s  dir:%s \n",XSTR(CFGTOP), XSTR(CFGLOCAL));
       else
-         errlogPrintf("pvload SCSinit.pv\n");
+         errlogPrintf("pvload SCSinit.pv top:%s  dir:%s \n",XSTR(CFGTOP), XSTR(CFGLOCAL));
                 
       if(pvload(XSTR(CFGLOCAL) "/xforms.pv", "top=" XSTR(CFGTOP) ":", 0, 0) != OK)
          errlogPrintf("pvload error xforms.pv\n");
