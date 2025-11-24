@@ -4,6 +4,7 @@
 %define debug_package %{nil}
 %define arch %(uname -m)
 %define git_hash %(git rev-parse --short HEAD 2>/dev/null || echo "nogit")
+%define git_branch %(git rev-parse --abbrev-ref HEAD 2>/dev/null | sed 's/[^a-zA-Z0-9._-]/-/g' | sed 's/-\+/-/g' | sed 's/^-\|-$//g' || echo "nobranch")
 
 #These global defines are added to prevent stripping
 # symbols on vxWorks cross-compiled code
@@ -19,7 +20,7 @@
 Summary: %{name} Package, a module for EPICS base
 Name: %{name}
 Version: 2.9
-Release: 8.git%{git_hash}%{?dist}
+Release: 8.%{git_branch}.%{git_hash}%{?dist}
 License: EPICS Open License
 Group: Applications/Engineering
 Source0: %{name}-%{version}.tar.gz
