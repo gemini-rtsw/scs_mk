@@ -4,7 +4,7 @@
 %define debug_package %{nil}
 %define arch %(uname -m)
 %define git_hash %(git rev-parse --short HEAD 2>/dev/null || echo "nogit")
-%define git_branch %( (git rev-parse --abbrev-ref HEAD 2>/dev/null | grep -v HEAD || echo ${CI_COMMIT_REF_NAME:-nobranch}) | sed 's/[^a-zA-Z0-9._-]/-/g' )
+%define git_branch %( (git rev-parse --abbrev-ref HEAD 2>/dev/null | grep -v HEAD || echo ${CI_COMMIT_REF_NAME:-nobranch}) | sed 's/[^a-zA-Z0-9]/_/g' )
 
 #These global defines are added to prevent stripping
 # symbols on vxWorks cross-compiled code
