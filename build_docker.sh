@@ -4,7 +4,7 @@
 set -e
 
 # Default token for local builds (same as in .gitlab-ci.yml)
-TOKEN="${TOKEN:-***REMOVED***}"
+TOKEN="${REGISTRY_TOKEN}"
 
 # Default repository path
 REPO_PATH="rpm-repo/1.0"

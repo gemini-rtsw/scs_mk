@@ -63,7 +63,7 @@ docker run --rm -v $(pwd):/work -w /work \
         # Configure GitLab repository first
         echo "[gitlab-rpm-repo]
 name=GitLab RPM Repository
-baseurl=https://oauth2:***REMOVED***@gitlab.com/api/v4/projects/66226575/packages/generic/'$REPO_PATH'/
+baseurl=https://oauth2:${REGISTRY_TOKEN}@gitlab.com/api/v4/projects/66226575/packages/generic/'$REPO_PATH'/
 enabled=1
 gpgcheck=0" > /etc/yum.repos.d/gitlab-rpm-repo.repo && \
         
