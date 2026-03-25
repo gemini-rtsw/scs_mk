@@ -58,6 +58,7 @@ docker pull rockylinux:8
 echo "Running build in container..."
 docker run --rm -v $(pwd):/work -w /work \
     -e CI_COMMIT_REF_NAME="${CI_COMMIT_REF_NAME}" \
+    -e REGISTRY_TOKEN="${REGISTRY_TOKEN}" \
     rockylinux:8 \
     /bin/bash -c 'set -ex && \
         # Configure GitLab repository first
