@@ -21,21 +21,19 @@
 
 TEMPLATE_TOP=$(EPICS_BASE)/templates/makeBaseApp/top
 
-PRODSUP=/gem_base/epics/support
-
-TIMELIB=$(PRODSUP)/timelib
-SLALIB=$(PRODSUP)/slalib
-GEMREC=$(PRODSUP)/geminiRec
-GEMUTIL=$(PRODSUP)/gemUtil
-TCSLIB=$(PRODSUP)/tcslib
-SNCSEQ=$(PRODSUP)/sequencer
-PVLOAD=$(PRODSUP)/pvload
-# BANCOMM=$(PRODSUP)/bancomm
-# IOCSTATS=$(PRODSUP)/iocStats
-TIMEPROBE=$(PRODSUP)/timeProbe
-SYMB=$(PRODSUP)/symb
-VMIC=$(PRODSUP)/vmi5588
-XYCOM=$(PRODSUP)/xycom
+TIMELIB=$(SUPPORT)/timelib
+SLALIB=$(SUPPORT)/slalib
+GEMREC=$(SUPPORT)/geminiRec
+GEMUTIL=$(SUPPORT)/gemUtil
+TCSLIB=$(SUPPORT)/tcslib
+SNCSEQ=$(SUPPORT)/sequencer
+PVLOAD=$(SUPPORT)/pvload
+# BANCOMM=$(SUPPORT)/bancomm
+# IOCSTATS=$(SUPPORT)/iocStats
+TIMEPROBE=$(SUPPORT)/timeProbe
+SYMB=$(SUPPORT)/symb
+VMIC=$(SUPPORT)/vmi5588
+XYCOM=$(SUPPORT)/xycom
 
 
 # EPICS_BASE usually appears last so other apps can override stuff:
