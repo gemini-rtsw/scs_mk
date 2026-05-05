@@ -1,7 +1,7 @@
 $(LINUX_ONLY)#!${INSTALL}/bin/${ARCH}/scs-mk-ioc
 
 #cd ../..
-epicsEnvSet("EPICS_TS_NTP_CONF_FILE","/rtconfig/ntp/ntp-10.2.50.10.conf")
+#epicsEnvSet("EPICS_TS_NTP_CONF_FILE","/rtconfig/ntp/ntp-10.2.50.10.conf")
 nfsMount("$(CFGSERVER)","$(CFGREMOTE)","$(CFGLOCAL)")
 
 epicsEnvSet "IOCSH_PS1" "scs-mk-ioc>"
