@@ -66,6 +66,7 @@ cp -r db $RPM_BUILD_ROOT/%{_prefix}/%{name}
 cp -r bin $RPM_BUILD_ROOT/%{_prefix}/%{name}
 cp -r configure $RPM_BUILD_ROOT/%{_prefix}/%{name}
 cp -r data $RPM_BUILD_ROOT/%{_prefix}/%{name}
+cp -r lib $RPM_BUILD_ROOT/%{_prefix}/%{name}
 
 %postun
 if [ "$1" = "0" ]; then
@@ -83,6 +84,7 @@ rm -rf $RPM_BUILD_ROOT
    /%{_prefix}/%{name}/dbd
    /%{_prefix}/%{name}/configure
    /%{_prefix}/%{name}/data
+   /%{_prefix}/%{name}/lib
 
 %files devel
 %defattr(-,root,root)
