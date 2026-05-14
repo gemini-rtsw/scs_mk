@@ -73,8 +73,11 @@
 #include <subRecord.h>
 #endif
 
-// #define SCSTOP "top = m2:"
-// #define INSTTOP "I = m2:inst:"
+#include <rtems.h>
+#include <rtems/shell.h>
+
+// #define SCSTOP "top = m2v:"
+// #define INSTTOP "I = m2v:inst:"
 
 static int loggingEnable = ON;
 
@@ -85,6 +88,7 @@ int pvload(char *file, char *subset, int flags, int noAbort);
 int debugLevel = DEBUG_NONE;
 long inPosition = 0;
 frameChange *ag2m2[MAX_SOURCES];
+//int loadComplete = 0; /* Definition for loadComplete variable */
 
 /* not used anywhere. 20171019 MDW */
 //SEM_ID compileStatus = NULL; 
@@ -981,9 +985,9 @@ int loadInitFiles(void*p)
       errlogPrintf("pvload initialisation data\n");
 
       if(pvload(XSTR(CFGLOCAL) "/SCSinit.pv", "top=" XSTR(CFGTOP) ":", 0, 0) != OK)
-         errlogPrintf("pvload error SCSinit.pv\n");
+         errlogPrintf("pvload error SCSinit.pv top:%s  dir:%s \n",XSTR(CFGTOP), XSTR(CFGLOCAL));
       else
-         errlogPrintf("pvload SCSinit.pv\n");
+         errlogPrintf("pvload SCSinit.pv top:%s  dir:%s \n",XSTR(CFGTOP), XSTR(CFGLOCAL));
                 
       if(pvload(XSTR(CFGLOCAL) "/xforms.pv", "top=" XSTR(CFGTOP) ":", 0, 0) != OK)
          errlogPrintf("pvload error xforms.pv\n");
@@ -1489,6 +1493,63 @@ int  modifyFrame
 
         return (OK);
 }
+
+/*
+ * Function name:
+ * rebootVME
+ *
+ * Purpose:
+ * Reboot a VME system
+ *
+ * Invocation:
+ * int rebootVME()
+ *
+ * Parameters in:
+ *
+ * Parameters out:
+ * None
+ *
+ * Return value:
+ *      < int       OK or ERROR
+ *
+ * Globals:
+ *  External functions:
+ *  None
+ *
+ *  External variables:
+ *  None
+ *
+ * Requirements:
+ *
+ * Author:
+ *
+ * History:
+ *
+ */
+
+/* INDENT ON */
+/* ===================================================================== */
+
+int rebootVME ()
+{
+    int     argc;
+    char *argv[40];
+    char *cmd_argv;
+    char *cmds[40];
+
+    /* function reboot a VME system */
+    printf ("rebootVME function: START\n");
+    cmd_argv = malloc (40);
+    cmds[0] = calloc (1, 40);
+    memset (cmds[0], 0, 1 * 40);
+    strncpy(cmds[0],"shutdown",40);
+    memcpy (cmd_argv, cmds[0], 40);
+    if (!rtems_shell_make_args(cmd_argv, &argc, argv, 40)) {
+       rtems_shell_execute_cmd(argv[0], argc, argv);
+    }
+    return (OK);
+}
+
 
 /* ===================================================================== */
 /* INDENT OFF */

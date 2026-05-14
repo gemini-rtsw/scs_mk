@@ -1,35 +1,35 @@
 $(LINUX_ONLY)#!${INSTALL}/bin/${ARCH}/scs-mk-ioc
 
-cd ${INSTALL}
-
+#cd ../..
+#epicsEnvSet("EPICS_TS_NTP_CONF_FILE","/rtconfig/ntp/ntp-10.2.50.10.conf")
 nfsMount("$(CFGSERVER)","$(CFGREMOTE)","$(CFGLOCAL)")
 
 epicsEnvSet "IOCSH_PS1" "scs-mk-ioc>"
 #epicsEnvSet "EPICS_CA_ADDR_LIST" "10.1.2.175"
 #epicsEnvSet "EPICS_CA_AUTO_ADDR_LIST" "NO"
 
-bspExtVerbosity=0
+# bspExtVerbosity=0
 ## Register all support components
 dbLoadDatabase("dbd/scs-mk-ioc.dbd")
 scs_mk_ioc_registerRecordDeviceDriver(pdbbase)
 
 ## Load record instances
-dbLoadRecords("db/m2.db")
-dbLoadRecords("db/m2sad.db")
-dbLoadRecords("db/iocAdminRTEMS.db"," IOC=m2:iocStats,TODFORMAT=%m/%d/%Y %H:%M:%S")
-dbLoadRecords("db/timeProbe.db","top=m2:")
+dbLoadRecords("db/m2.db","top=$(CFGTOP):")
+dbLoadRecords("db/m2sad.db","top=$(CFGTOP):")
+# dbLoadRecords("db/iocAdminRTEMS.db"," IOC=$(CFGTOP):iocStats,TODFORMAT=%m/%d/%Y %H:%M:%S")
+dbLoadRecords("db/timeProbe.db","top=$(CFGTOP):")
 
 # Configure BANCOMM card
 # - set the bc635 Time Provider priority to something other than the default
 # or set it to a negative value to disable the bc635 Time Provider
 # Must be called before BCconfigure
-bc635TimeSetTpPrio (60)
+# bc635TimeSetTpPrio (60)
 
 #Set the Bancomm master in RTC ("A3") Mode
 #bcUseRTCMode()
 
 # - Master ? Simulate ? intPerSecond, intPerTick, timeOffset (microsec)
-BCconfigure (0, 0, 1000, 1, 0)
+# BCconfigure (0, 0, 1000, 1, 0)
 
 # initialise the xycom 240
 drvXy240ConfigOutputInit(1, 32, 0xd000, 0x0000, 0x0003)
@@ -57,7 +57,7 @@ iocInit
 #CADlogging = 1
 
 #startGuideSim
-dbpf "m2:interlockOverride","1"
+dbpf "$(CFGTOP):interlockOverride","1"
 
 ##M2TS TTL SERVO ON Card0, PORT7, Bit 1, HIGH #####
 #xy240_writePortBit (0,7,1,1)
@@ -65,19 +65,19 @@ dbpf "m2:interlockOverride","1"
 ##M2TS CEM POWER ON Card0, PORT7, Bit 0, HIGH #####
 #xy240_writePortBit (0,7,0,1)
 
-dbpf "m2:guideConfigReset.DIR","0"
+dbpf "$(CFGTOP):guideConfigReset.DIR","0"
 ###### Start any sequence programs
-seq &timeSeq, "sys=m2:, top=tcs:"
-seq &tilt_st, "S=m2:tilt:, debug=0"
-seq &scs_st, "T=m2:, D=m2:, F=m2:, I=m2:inst:"
+seq &timeSeq, "sys=$(CFGTOP):, top=tcs:"
+seq &tilt_st, "S=$(CFGTOP):tilt:, debug=0"
+seq &scs_st, "T=$(CFGTOP):, D=$(CFGTOP):, F=$(CFGTOP):, I=$(CFGTOP):inst:"
 
-####dbpr "m2:interlock"
+####dbpr "$(CFGTOP):interlock"
 ##### Comment out during testing signal from GIS:
 ####
-dbpf "m2:guideConfigReset.DIR","2"
-dbpf "m2:guideConfigReset.DIR","3"
+dbpf "$(CFGTOP):guideConfigReset.DIR","2"
+dbpf "$(CFGTOP):guideConfigReset.DIR","3"
 
-dbpf "m2:setController.DIR","2"
-dbpf "m2:setController.DIR","3"
+dbpf "$(CFGTOP):setController.DIR","2"
+dbpf "$(CFGTOP):setController.DIR","3"
 
 

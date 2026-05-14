@@ -55,7 +55,7 @@
 
 
 #if defined (__rtems__)
-#include <os/RTEMS/devIocStatsOSD.h>   /* for reboot() */
+/* #include <os/RTEMS/devIocStatsOSD.h> */  /* for reboot() */
 #include <bsp/bootcard.h>              /* for bsp_reset() */
 #endif
 
@@ -319,6 +319,8 @@ int m22tcs(location *position);
 
 int gaos2m2(location *position);
 
+int rebootVME();
+
 int gyro2m2(location *position);
 
 long checkSum(void *ptr, int numLongs);
@@ -360,7 +362,7 @@ long scsStateStringInit (struct genSubRecord * pgsub);
 long driveEvent (struct subRecord * psub);
 
 /* Global variables */
-int loadComplete;
+extern int loadComplete;
 extern int debugLevel;
 extern long inPosition;
 extern frameChange *ag2m2[MAX_SOURCES];
