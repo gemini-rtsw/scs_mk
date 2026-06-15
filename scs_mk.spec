@@ -45,20 +45,16 @@ BuildRequires: tcslib-devel        = 1.1.1-9.git.37.d589d5e.el8
 BuildRequires: pvload-devel        = 1.2.1-7.git.45.a07ac91.el8
 BuildRequires: symb-devel          = 1.6.13-4.git.13.a94249f.el8
 BuildRequires: vmi5588-devel       = 1.3-1.git.18.07dd878.el8
-Requires: epics-base = 7.0.7-0.git.37.9b80a5c
-Requires: sequencer  = 2.2.9.e5e3615-4.git.68.cf961a8.el8
-Requires: autosave   = 5.10.2-0.git.11.b869ff1.el8
-Requires: bancomm    = 1.6.13-4.git.28.1ca0cb4.el8
-Requires: geminiRec  = 4.1.13-3.git.53.c94c965.el8
-Requires: timelib    = 2.1.4-3.git.21.866a01c.el8
-Requires: slalib     = 1.9.7-6.git.67.7872e05.el8
-Requires: xycom      = 2.1.12-2.git.40.bfc6610.el8
-Requires: gemUtil    = 1.6.13-2.git.27.0265e0f.el8
-Requires: timeProbe  = 1.1.16-3.git.27.7207767.el8
-Requires: tcslib     = 1.1.1-9.git.37.d589d5e.el8
-Requires: pvload     = 1.2.1-7.git.45.a07ac91.el8
-Requires: symb       = 1.6.13-4.git.13.a94249f.el8
-Requires: vmi5588    = 1.3-1.git.18.07dd878.el8
+## No runtime Requires on the main package.
+## The artifacts shipped here are cross-compiled for the VME target
+## (CROSS_COMPILER_TARGET_ARCHS = RTEMS-mvme2700) and are network-booted
+## by the board; nothing in this package executes on the el8 install host.
+## The support modules above are needed only to LINK the cross-build, hence
+## they are BuildRequires only. Carrying them as exactly-pinned runtime
+## Requires would make this package conflict with any co-installed RPM that
+## pins a different version of the same support module, for no benefit.
+## (The -devel subpackage below intentionally keeps its pins — its purpose
+## is to reproduce the exact build environment.)
 ## Switch dependency checking off
 AutoReqProv: no
 
@@ -137,3 +133,10 @@ rm -rf $RPM_BUILD_ROOT
    # No files needed for devel package, just dependencies
 
 %changelog
+* Mon Jun 15 2026 Hawi Stecher <hawi.stecher@noirlab.edu> 2.11-8
+- Drop runtime Requires from the main package. Artifacts are cross-compiled
+  for the RTEMS-mvme2700 VME target and never run on the install host, so the
+  support modules are build-time link deps only (BuildRequires). Exactly-pinned
+  runtime Requires created conflicts with other RPMs on the shared host that
+  pin different versions of the same modules. The -devel subpackage keeps its
+  pins intentionally.
