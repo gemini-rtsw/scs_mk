@@ -1,6 +1,10 @@
 name: Build
 
-on: push
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: read
@@ -8,7 +12,12 @@ permissions:
 
 jobs:
   build:
-    uses: gemini-rtsw/gemini-rtsw-ci/.github/workflows/ci.yml@main
+    strategy:
+      fail-fast: false
+      matrix:
+        el: ['8', '9']
+    uses: gemini-rtsw/gemini-rtsw-ci/.github/workflows/ci.yml@main-el8
     with:
       scripts_dir: gemini-rtsw-ci
+      el_version: ${{ matrix.el }}
     secrets: inherit
