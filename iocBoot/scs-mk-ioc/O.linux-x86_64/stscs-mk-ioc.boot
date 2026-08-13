@@ -1,0 +1,83 @@
+#!/repo/bin/linux-x86_64/scs-mk-ioc
+
+#cd ../..
+#epicsEnvSet("EPICS_TS_NTP_CONF_FILE","/rtconfig/ntp/ntp-10.2.50.10.conf")
+nfsMount("10.2.71.11","/gem_sw/etc/rtconfig","/rtconfig")
+
+epicsEnvSet "IOCSH_PS1" "scs-mk-ioc>"
+#epicsEnvSet "EPICS_CA_ADDR_LIST" "10.1.2.175"
+#epicsEnvSet "EPICS_CA_AUTO_ADDR_LIST" "NO"
+
+# bspExtVerbosity=0
+## Register all support components
+dbLoadDatabase("dbd/scs-mk-ioc.dbd")
+scs_mk_ioc_registerRecordDeviceDriver(pdbbase)
+
+## Load record instances
+dbLoadRecords("db/m2.db","top=m2v:")
+dbLoadRecords("db/m2sad.db","top=m2v:")
+# dbLoadRecords("db/iocAdminRTEMS.db"," IOC=m2v:iocStats,TODFORMAT=%m/%d/%Y %H:%M:%S")
+dbLoadRecords("db/timeProbe.db","top=m2v:")
+
+# Configure BANCOMM card
+# - set the bc635 Time Provider priority to something other than the default
+# or set it to a negative value to disable the bc635 Time Provider
+# Must be called before BCconfigure
+# bc635TimeSetTpPrio (60)
+
+#Set the Bancomm master in RTC ("A3") Mode
+#bcUseRTCMode()
+
+# - Master ? Simulate ? intPerSecond, intPerTick, timeOffset (microsec)
+# BCconfigure (0, 0, 1000, 1, 0)
+
+# initialise the xycom 240
+drvXy240ConfigOutputInit(1, 32, 0xd000, 0x0000, 0x0003)
+
+# initialise reflective memory
+drvVmi5588Config(0xA00000, 0x040000, 0xb0, 0x06)
+
+# initialise system, first xycom (via chopInit), then then rest.
+# Note: scsInit spawns processGuides which writes to the xycom if compiled
+# with the USR C FLAG for TIME_LATENCY, so chopInit goes first.
+chopInit
+scsInit
+
+## Run this to trace the stages of iocInit
+#traceIocInit
+
+#Start EPICS
+iocInit
+
+# set debug level for test debugging
+#
+# TODO: Rippa confirm if these are obsolete, then remove
+#debugLevel = 0
+#loggingEnable = 1
+#CADlogging = 1
+
+#startGuideSim
+dbpf "m2v:interlockOverride","1"
+
+##M2TS TTL SERVO ON Card0, PORT7, Bit 1, HIGH #####
+#xy240_writePortBit (0,7,1,1)
+
+##M2TS CEM POWER ON Card0, PORT7, Bit 0, HIGH #####
+#xy240_writePortBit (0,7,0,1)
+
+dbpf "m2v:guideConfigReset.DIR","0"
+###### Start any sequence programs
+seq &timeSeq, "sys=m2v:, top=tcs:"
+seq &tilt_st, "S=m2v:tilt:, debug=0"
+seq &scs_st, "T=m2v:, D=m2v:, F=m2v:, I=m2v:inst:"
+
+####dbpr "m2v:interlock"
+##### Comment out during testing signal from GIS:
+####
+dbpf "m2v:guideConfigReset.DIR","2"
+dbpf "m2v:guideConfigReset.DIR","3"
+
+dbpf "m2v:setController.DIR","2"
+dbpf "m2v:setController.DIR","3"
+
+

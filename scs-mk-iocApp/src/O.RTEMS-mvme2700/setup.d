@@ -1,0 +1,54 @@
+setup.o: ../setup.c /gem_base/epics/epics-base/include/iocsh.h \
+ /gem_base/epics/epics-base/include/compilerDependencies.h \
+ /gem_base/epics/epics-base/include/compiler/gcc/compilerSpecific.h \
+ /gem_base/epics/epics-base/include/libComAPI.h \
+ /gem_base/epics/epics-base/include/epicsExport.h \
+ /gem_base/epics/epics-base/include/shareLib.h \
+ /gem_base/epics/epics-base/include/dbAccess.h \
+ /gem_base/epics/epics-base/include/dbDefs.h \
+ /gem_base/epics/epics-base/include/epicsTime.h \
+ /gem_base/epics/epics-base/include/epicsTypes.h \
+ /gem_base/epics/epics-base/include/os/RTEMS/osdTime.h \
+ /gem_base/epics/epics-base/include/errMdef.h \
+ /gem_base/epics/epics-base/include/caeventmask.h \
+ /gem_base/epics/epics-base/include/dbFldTypes.h \
+ /gem_base/epics/epics-base/include/dbCoreAPI.h \
+ /gem_base/epics/epics-base/include/link.h \
+ /gem_base/epics/epics-base/include/ellLib.h \
+ /gem_base/epics/epics-base/include/dbBase.h \
+ /gem_base/epics/epics-base/include/recSup.h \
+ /gem_base/epics/epics-base/include/devSup.h \
+ /gem_base/epics/epics-base/include/dbAddr.h \
+ /gem_base/epics/epics-base/include/dbLock.h \
+ /gem_base/epics/epics-base/include/dbAccessDefs.h \
+ /gem_base/epics/epics-base/include/dbLink.h \
+ /gem_base/epics/epics-base/include/dbChannel.h \
+ /gem_base/epics/epics-base/include/db_field_log.h \
+ /gem_base/epics/epics-base/include/epicsTime.h \
+ /gem_base/epics/epics-base/include/epicsTypes.h \
+ /gem_base/epics/epics-base/include/dbEvent.h \
+ /gem_base/epics/epics-base/include/epicsThread.h \
+ /gem_base/epics/epics-base/include/os/RTEMS/osdThread.h \
+ /gem_base/epics/epics-base/include/libComAPI.h \
+ /gem_base/epics/epics-base/include/ellLib.h \
+ /gem_base/epics/epics-base/include/epicsEvent.h \
+ /gem_base/epics/epics-base/include/os/RTEMS/osdEvent.h \
+ /gem_base/epics/epics-base/include/dbCa.h \
+ /gem_base/epics/epics-base/include/dbCommon.h \
+ /gem_base/epics/epics-base/include/epicsMutex.h \
+ /gem_base/epics/epics-base/include/epicsAssert.h \
+ /gem_base/epics/epics-base/include/os/RTEMS/osdMutex.h \
+ /gem_base/epics/epics-base/include/devSup.h \
+ /gem_base/epics/support/vmi5588/include/vmi5588.h \
+ /gem_base/epics/epics-base/include/dbScan.h \
+ /gem_base/epics/epics-base/include/menuScan.h ../setup.h ../utilities.h \
+ /gem_base/epics/epics-base/include/subRecord.h \
+ /gem_base/epics/support/geminiRec/include/genSubRecord.h \
+ /gem_base/epics/epics-base/include/link.h \
+ /gem_base/epics/epics-base/include/epicsMutex.h \
+ /gem_base/epics/epics-base/include/errlog.h \
+ /gem_base/epics/epics-base/include/epicsMessageQueue.h \
+ /gem_base/epics/epics-base/include/os/RTEMS/osdMessageQueue.h \
+ /gem_base/epics/epics-base/include/epicsThread.h ../guide.h \
+ /gem_base/epics/support/geminiRec/include/cadRecord.h ../m2Log.h \
+ ../control.h ../chopControl.h

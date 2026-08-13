@@ -1,0 +1,28 @@
+scs-mk-ioc_registerRecordDeviceDriver.o: \
+ scs-mk-ioc_registerRecordDeviceDriver.cpp \
+ /gem_base/epics/epics-base/include/compilerDependencies.h \
+ /gem_base/epics/epics-base/include/compiler/gcc/compilerSpecific.h \
+ /gem_base/epics/epics-base/include/epicsStdlib.h \
+ /gem_base/epics/epics-base/include/libComAPI.h \
+ /gem_base/epics/epics-base/include/os/RTEMS/osdStrtod.h \
+ /gem_base/epics/epics-base/include/epicsTypes.h \
+ /gem_base/epics/epics-base/include/compilerDependencies.h \
+ /gem_base/epics/epics-base/include/errMdef.h \
+ /gem_base/epics/epics-base/include/iocsh.h \
+ /gem_base/epics/epics-base/include/iocshRegisterCommon.h \
+ /gem_base/epics/epics-base/include/dbCoreAPI.h \
+ /gem_base/epics/epics-base/include/registryCommon.h \
+ /gem_base/epics/epics-base/include/dbStaticLib.h \
+ /gem_base/epics/epics-base/include/dbFldTypes.h \
+ /gem_base/epics/epics-base/include/dbBase.h \
+ /gem_base/epics/epics-base/include/ellLib.h \
+ /gem_base/epics/epics-base/include/dbDefs.h \
+ /gem_base/epics/epics-base/include/recSup.h \
+ /gem_base/epics/epics-base/include/devSup.h \
+ /gem_base/epics/epics-base/include/link.h \
+ /gem_base/epics/epics-base/include/cantProceed.h \
+ /gem_base/epics/epics-base/include/dbJLink.h \
+ /gem_base/epics/epics-base/include/dbCoreAPI.h \
+ /gem_base/epics/epics-base/include/registryRecordType.h \
+ /gem_base/epics/epics-base/include/recSup.h \
+ /gem_base/epics/epics-base/include/shareLib.h
