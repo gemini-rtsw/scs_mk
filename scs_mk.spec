@@ -109,6 +109,10 @@ cp -r bin $RPM_BUILD_ROOT/%{_prefix}/%{name}
 cp -r configure $RPM_BUILD_ROOT/%{_prefix}/%{name}
 cp -r data $RPM_BUILD_ROOT/%{_prefix}/%{name}
 cp -r lib $RPM_BUILD_ROOT/%{_prefix}/%{name}
+# The crate's PPCBug parameters (bootsmith MKO-PROD-SCS*) TFTP scs.boot and run
+# stscs from the top directory, so dbd/ and db/ resolve relative to it.
+ln -s bin/RTEMS-mvme2700/scs-mk-ioc.boot   $RPM_BUILD_ROOT/%{_prefix}/%{name}/scs.boot
+ln -s bin/RTEMS-mvme2700/stscs-mk-ioc.boot $RPM_BUILD_ROOT/%{_prefix}/%{name}/stscs
 
 %postun
 if [ "$1" = "0" ]; then
@@ -127,6 +131,8 @@ rm -rf $RPM_BUILD_ROOT
    /%{_prefix}/%{name}/configure
    /%{_prefix}/%{name}/data
    /%{_prefix}/%{name}/lib
+   /%{_prefix}/%{name}/scs.boot
+   /%{_prefix}/%{name}/stscs
 
 %files devel
 %defattr(-,root,root)
